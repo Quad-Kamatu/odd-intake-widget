@@ -211,13 +211,12 @@
   <script>
   // -------- CONFIG --------
   const CONFIG = {
-    mode: 'static',
-    api: {
-      baseUrl: 'https://YOUR-WIX-DOMAIN/_functions',
-      pricingPath: '/pricing',
-      discountPath: '/discount-lookup',
-      webhookPath: '/discord-proxy'
-    },
+  mode: 'api',
+  api: {
+    baseUrl: 'https://www.onedaydance.com/_functions',   // <-- your live domain
+    discountPath: '/discount-lookup',
+    webhookPath: '/submit'
+  },
     staticData: {
       services: [
         { serviceKey: 'videography', serviceName: 'Videography' },
