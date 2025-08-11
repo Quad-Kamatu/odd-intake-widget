@@ -488,22 +488,55 @@
       hide('.eventRow'); hide('.locationRow');
     }
 
-    function refreshSubs(){$1updateQuote();
+    function refreshSubs(){
+      const key = typeSel.value;
+      const subs = CONFIG.staticData.pricing.filter(p=>p.serviceKey===key);
+      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
+      subSel.disabled = false;
+      svc.serviceKey = key; svc.subType = '';
+      updateQuote();
+      // ensure height adjusts when subtype menu appears
       debouncedSendHeight();
     }
-    typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); debouncedSendHeight(); });
-    refreshSubs();
 
-    function toggleForSub(){$1
-      debouncedSendHeight();
-    }[wrap.querySelector('.complexity').value] || ''
+    // Show/hide fields based on selected service
+    function toggleForSub(){
+      const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
+      if (!meta){ debouncedSendHeight(); return; }
+      const unit = meta.priceUnit || 'flat';
+      const isEvent = ['photography','videography'].includes(meta.serviceKey);
+
+      // Event basics
+      wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
+      wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
+      wrap.querySelector('.date').required = isEvent;
+      wrap.querySelector('.time').required = isEvent;
+      wrap.querySelector('.location').required = isEvent;
+
+      // Quantities
+      wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
+      wrap.querySelector('.hoursWrap').style.display = (unit==='perHour') ? '' : 'none';
+      wrap.querySelector('.filmLenWrap').style.display = (unit==='perMinute') ? '' : 'none';
+      wrap.querySelector('.headshotRow').style.display = (unit==='perHeadshot') ? '' : 'none';
+      wrap.querySelector('.hours').required = (unit==='perHour');
+      const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
+      const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
+
+      // Complexity (only for Video Editing & Dance Film Production when perMinute)
+      const showComplexity = serviceEligibleForComplexity(svc.subType) && unit==='perMinute';
+      wrap.querySelector('.complexityWrap').style.display = showComplexity ? '' : 'none';
+      wrap.querySelector('.complexity').required = showComplexity;
+      const help = wrap.querySelector('.help');
+      help.textContent = showComplexity ? (
+        { simple:'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
+          moderate:'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
+          complex:'Complex: advanced compositing, 3D, heavy VFX, or generative AI.' }[wrap.querySelector('.complexity').value] || ''
       ) : '';
 
       // Audio (all videography except Video Editing)
       const showAudio = isVideography(svc.subType) && !isVideoEditing(svc.subType);
       wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
-      if (!showAudio) wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.checked = false);
 
       // Add-ons
       const camOK = cameraEligible(svc.subType);
@@ -513,10 +546,16 @@
       wrap.querySelector('.lightingWrap').style.display = lightOK ? '' : 'none';
       const camQty = Number(wrap.querySelector('.addCam').value || 0);
       wrap.querySelector('.addCamHoursWrap').style.display = (camQty>0 && unit!=='perHour') ? '' : 'none';
+
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
+      debouncedSendHeight();
     }
 
-    subSel.addEventListener('change', ()=>{ resetServiceUI(); svc.subType = subSel.value; toggleForSub(); updateQuote(); });
+    // Type & Sub-type listeners
+    typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); });
+    subSel.addEventListener('change', () => { svc.subType = subSel.value; toggleForSub(); updateQuote(); });
+    // Initial population of sub-services
+    refreshSubs();
     wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
     const unitsInput = wrap.querySelector('.units');
     const filmSlider = wrap.querySelector('.filmSlider');
@@ -663,6 +702,14 @@
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
       }
       window.addEventListener('load', sendHeight);
+      // extra pings during first seconds after load to cover font/Tailwind reflow
+      (function(){
+        const start = Date.now();
+        const t = setInterval(()=>{
+          sendHeight();
+          if (Date.now()-start > 8000) clearInterval(t);
+        }, 300);
+      })();
       // extra pings for early layout shifts
       (function(){
         const start = Date.now();
