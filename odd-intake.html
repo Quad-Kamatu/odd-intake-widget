@@ -14,11 +14,7 @@
     }
 
     /* Animatable custom angle for the gradient */
-    @property --ang {
-      syntax: '<angle>';
-      inherits: false;
-      initial-value: 0deg;
-    }
+    @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
     html, body { height: 100%; }
     body{ color:#111; position:relative; }
@@ -33,17 +29,10 @@
       filter: saturate(1.03);
     }
 
-    @keyframes bg-pan {
-      0%   { background-position:   0%  0%; }
-      50%  { background-position: 100%  0%; }
-      100% { background-position:   0% 100%; }
-    }
+    @keyframes bg-pan { 0%{background-position:0% 0%} 50%{background-position:100% 0%} 100%{background-position:0% 100%} }
     @keyframes bg-rotate { to { --ang: 360deg; } }
 
-    /* Respect users who prefer less motion */
-    @media (prefers-reduced-motion: reduce){
-      body::before{ animation: none; }
-    }
+    @media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
 
     .card{ box-shadow:0 8px 20px rgba(0,0,0,.06); border-radius:16px; background:#fff; padding:24px; border:1px solid #eaeaea; }
     .lbl{ font-size:0.9rem; font-weight:600; color:#222; }
@@ -60,24 +49,9 @@
     .muted{ opacity:.6; }
     a.link{ color:#111; text-decoration:underline; }
     .service-card{ border:1px dashed #e5e7eb; border-radius:16px; padding:16px; }
-      .page-title, .page-subtitle{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); }
-    .page-subtitle{ font-weight:500; }
-      /* Brand styling for film length slider */
-    .filmSlider{ accent-color:#76F1FF; height: 2rem; }
-    .filmSlider:focus{ outline:none; }
-    /* WebKit */
-    .filmSlider::-webkit-slider-runnable-track{ height:6px; border-radius:9999px; background:#dbeafe; }
-    .filmSlider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; margin-top:-6px; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-    .filmSlider:focus::-webkit-slider-thumb{ box-shadow:0 0 0 4px rgba(118,241,255,.25); }
-    /* Firefox */
-    .filmSlider::-moz-range-track{ height:6px; border-radius:9999px; background:#dbeafe; }
-    .filmSlider::-moz-range-progress{ height:6px; border-radius:9999px; background:#76F1FF; }
-    .filmSlider::-moz-range-thumb{ width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-      /* Spacing fixes */
-    .filmLenWrap{ margin-bottom:12px; }
-    .complexityWrap{ margin-top:8px; }
+    .page-title, .page-subtitle{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); }
 
-    /* Slider fill + brand color overrides */
+    /* Film length slider styles */
     .filmSlider{ --val:0%; accent-color:#76F1FF; height:2rem; width:100%; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); border-radius:9999px; }
     .filmSlider:focus{ outline:none; }
     /* WebKit */
@@ -88,7 +62,8 @@
     .filmSlider::-moz-range-track{ height:6px; border-radius:9999px; background:#dbeafe; }
     .filmSlider::-moz-range-progress{ height:6px; border-radius:9999px; background:#76F1FF; }
     .filmSlider::-moz-range-thumb{ width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-      /* Consistent spacing for dynamic question groups inside each service card */
+
+    /* Consistent spacing for dynamic question groups inside each service card */
     .service-card .row,
     .service-card .eventRow,
     .service-card .locationRow,
@@ -97,13 +72,10 @@
     .service-card .complexityWrap,
     .service-card .audioWrap,
     .service-card .addonsWrap{ margin-bottom:16px; }
-
-    /* Extra breathing room for film length + complexity helper */
     .service-card .filmLenWrap{ margin-bottom:12px; }
     .service-card .complexityWrap .help{ margin-top:8px; }
-
-    /* No extra gap after the final block in a service card */
     .service-card > :last-child{ margin-bottom:0 !important; }
+
     /* Spinner */
     @keyframes spin{ to{ transform: rotate(360deg); } }
     .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
@@ -153,9 +125,10 @@
             </div>
           </div>
         </div>
-      </div></div>
+      </div>
+    </div>
 
-      <!-- Services Form -->
+    <!-- Services Form -->
     <form id="intakeForm" class="space-y-6" novalidate>
       <!-- Services container (primary + extras) -->
       <div id="servicesContainer" class="space-y-6"></div>
@@ -221,10 +194,7 @@
   // -------- CONFIG --------
   const CONFIG = {
     mode: 'api',
-    api: {
-      baseUrl: 'https://www.onedaydance.com/_functions',
-      webhookPath: '/submit'
-    },
+    api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit' },
     staticData: {
       services: [
         { serviceKey: 'videography', serviceName: 'Videography' },
@@ -235,11 +205,9 @@
         // VIDEOGRAPHY
         { serviceKey: 'videography', subType: 'Dance Reel Express', basePrice: 300, priceUnit: 'flat' },
         { serviceKey: 'videography', subType: 'Event Videography', basePrice: 70, priceUnit: 'perHour' },
-        // Film production (per minute) — complexity mapped via dropdown
         { serviceKey: 'videography', subType: 'Dance Film Production', basePrice: 100, priceUnit: 'perMinute', complexityBase: { simple:100, moderate:200, complex:300 } },
         { serviceKey: 'videography', subType: 'Rehearsal Videography', basePrice: 50, priceUnit: 'perHour' },
         { serviceKey: 'videography', subType: 'Audition Reel', basePrice: 120, priceUnit: 'flat' },
-        // Video Editing (per minute)
         { serviceKey: 'videography', subType: 'Video Editing', basePrice: 75, priceUnit: 'perMinute', complexityBase: { simple:75, moderate:150, complex:250 } },
         // PHOTOGRAPHY
         { serviceKey: 'photography', subType: 'Event Photography', basePrice: 90, priceUnit: 'perHour' },
@@ -253,103 +221,54 @@
         { serviceKey: 'design', subType: 'Flyer or Postcard', basePrice: 100, priceUnit: 'flat', startingAt: true },
         { serviceKey: 'design', subType: 'Business Card', basePrice: 100, priceUnit: 'flat' },
         { serviceKey: 'design', subType: 'Web Design', basePrice: 500, priceUnit: 'flat', startingAt: true }
-      ],    }
+      ]
+    }
   };
 
   // -------- STATE --------
-  const state = {
-    // email/CMS-based artist discount
-    services: [] // array of per-section objects
-  };
+  const state = { services: [] };
 
   // -------- HELPERS --------
-  // ---- iFrame auto-height helpers for Wix ----
+  // iFrame auto-height → Wix page
   function sendHeight(){
-  try{
-    const b = document.body, d = document.documentElement;
-    const h = Math.max(
-      b ? b.scrollHeight : 0,
-      d ? d.scrollHeight : 0,
-      b ? b.offsetHeight : 0,
-      d ? d.offsetHeight : 0,
-      b ? b.clientHeight : 0,
-      d ? d.clientHeight : 0
-    );
-    const px = Math.ceil(Math.max(600, h));
-    window.parent && window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
-  }catch(e){ /* noop */ }
-}
-
-  function debounce(fn, wait=80){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
-
+    try{
+      const b = document.body, d = document.documentElement;
+      const h = Math.max(
+        b ? b.scrollHeight : 0,
+        d ? d.scrollHeight : 0,
+        b ? b.offsetHeight : 0,
+        d ? d.offsetHeight : 0,
+        b ? b.clientHeight : 0,
+        d ? d.clientHeight : 0
+      );
+      const px = Math.ceil(Math.max(600, h));
+      window.parent && window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
+    }catch(e){ /* noop */ }
+  }
+  function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
   const debouncedSendHeight = debounce(sendHeight, 80);
 
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => (Number(n)||0).toFixed(2);
   const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
-  function updateSliderFill(el){
-    if(!el) return;
-    const min = parseFloat(el.min)||0;
-    const max = parseFloat(el.max)||100;
-    const val = parseFloat(el.value)||0;
-    const pct = (max>min) ? ((val - min)/(max - min))*100 : 0;
-    el.style.setProperty('--val', pct + '%');
-  }
-  // --- Time helpers for Discord/email (primary service) ---
-  function to12h(h, m){ const ampm = h>=12 ? 'PM' : 'AM'; let hh = h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
-  function addHoursToTime(timeStr, hours){
-    if(!timeStr) return '';
-    const [hStr,mStr='0'] = String(timeStr).split(':');
-    const h = parseInt(hStr,10); const m = parseInt(mStr,10);
-    const total = h*60 + m + Math.round((Number(hours)||0)*60);
-    const nh = ((Math.floor(total/60))%24+24)%24; const nm = ((total%60)+60)%60;
-    return to12h(nh, nm);
-  }
+  function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
+  function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
+  function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
   function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
 
   function bestDiscountPercent(){
     const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
-    const selfPct = selfVal==='odd_artist' ? 20 : (selfVal==='student' || selfVal==='nonprofit' ? 10 : 0);
-    return selfPct;
+    return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0);
   }
+  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
 
-  // Update the on-page badge based only on self-identified discount
-  function updateDiscountBadge(){
-    const pct = bestDiscountPercent();
-    const badge = document.getElementById('discountBadge');
-    if (!badge) return;
-    if (pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; }
-    else { badge.classList.add('hidden'); }
-  }
-
-  function createServiceState(id){
-    return {
-      id,
-      serviceKey: '',
-      subType: '',
-      date: '', time: '', location: '',
-      hours: 1, units: 1,
-      complexity: 'simple',
-      addons: { addCamQty: 0, addCamHours: 1, lighting: false },
-      audio: null
-    };
-  }
-
-  function serviceEligibleForComplexity(subType){
-    return ['Video Editing','Dance Film Production'].includes(subType);
-  }
-
-  function cameraEligible(subType){
-    return ['Event Videography','Dance Film Production','Rehearsal Videography','Event Photography','Rehearsal Photography'].includes(subType);
-  }
-  function lightingEligible(subType){
-    return ['Dance Film Production','Rehearsal Videography'].includes(subType);
-  }
-  function isVideography(subType){
-    return CONFIG.staticData.pricing.find(p=>p.subType===subType)?.serviceKey === 'videography';
-  }
-  function isVideoEditing(subType){ return subType === 'Video Editing'; }
+  function createServiceState(id){ return { id, serviceKey:'', subType:'', date:'', time:'', location:'', hours:1, units:1, complexity:'simple', addons:{ addCamQty:0, addCamHours:1, lighting:false }, audio:null }; }
+  function serviceEligibleForComplexity(subType){ return ['Video Editing','Dance Film Production'].includes(subType); }
+  function cameraEligible(subType){ return ['Event Videography','Dance Film Production','Rehearsal Videography','Event Photography','Rehearsal Photography'].includes(subType); }
+  function lightingEligible(subType){ return ['Dance Film Production','Rehearsal Videography'].includes(subType); }
+  function isVideography(subType){ return CONFIG.staticData.pricing.find(p=>p.subType===subType)?.serviceKey==='videography'; }
+  function isVideoEditing(subType){ return subType==='Video Editing'; }
 
   function buildServiceCard(svc){
     const wrap = document.createElement('div');
@@ -357,12 +276,12 @@
     wrap.dataset.id = svc.id;
     wrap.innerHTML = `
       <div class="flex items-center justify-between mb-3">
-        <div class="font-semibold">Service ${svc.id === 'primary' ? '(Primary)' : ''}</div>
-        ${svc.id !== 'primary' ? '<button type="button" class="btn remove">Remove</button>' : ''}
+        <div class="font-semibold">Service ${svc.id==='primary'?'(Primary)':''}</div>
+        ${svc.id!=='primary'?'<button type="button" class="btn remove">Remove</button>':''}
       </div>
       <div class="row">
         <label class="block">
-          <span class="lbl">Service Type *<//span>
+          <span class="lbl">Service Type *</span>
           <select class="inp serviceType" required></select>
         </label>
         <label class="block">
@@ -462,7 +381,6 @@
     typeSel.innerHTML = CONFIG.staticData.services.map(s=>`<option value="${s.serviceKey}">${s.serviceName}</option>`).join('');
     const subSel = wrap.querySelector('.subType');
 
-    // Reset all service-specific inputs & state inside this card
     function resetServiceUI(){
       svc.hours = 1; svc.units = 1; svc.complexity = 'simple';
       svc.addons = { addCamQty:0, addCamHours:1, lighting:false };
@@ -493,6 +411,7 @@
       subSel.disabled = false;
       svc.serviceKey = key; svc.subType = '';
       updateQuote();
+      updateSubmitState();
       debouncedSendHeight();
     }
 
@@ -518,10 +437,8 @@
       const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
       const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
 
-      // Initialize units from headshots when applicable
       if (unit==='perHeadshot'){
-        const h = wrap.querySelector('.headshots');
-        if (h){ svc.units = Math.max(1, Number(h.value)||1); }
+        const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); }
       }
 
       // Complexity (only for Video Editing & Dance Film Production when perMinute)
@@ -529,11 +446,11 @@
       wrap.querySelector('.complexityWrap').style.display = showComplexity ? '' : 'none';
       wrap.querySelector('.complexity').required = showComplexity;
       const help = wrap.querySelector('.help');
-      help.textContent = showComplexity ? (
-        { simple:'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
-          moderate:'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
-          complex:'Complex: advanced compositing, 3D, heavy VFX, or generative AI.' }[wrap.querySelector('.complexity').value] || ''
-      ) : '';
+      help.textContent = showComplexity ? ({
+        simple:'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
+        moderate:'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
+        complex:'Complex: advanced compositing, 3D, heavy VFX, or generative AI.'
+      }[wrap.querySelector('.complexity').value] || '') : '';
 
       // Audio (all videography except Video Editing)
       const showAudio = isVideography(svc.subType) && !isVideoEditing(svc.subType);
@@ -550,6 +467,7 @@
       wrap.querySelector('.addCamHoursWrap').style.display = (camQty>0 && unit!=='perHour') ? '' : 'none';
 
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
+      updateSubmitState();
       debouncedSendHeight();
     }
 
@@ -581,12 +499,7 @@
     }
 
     const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){
-      headshotsInput.addEventListener('input', (e)=>{
-        svc.units = Math.max(1, Number(e.target.value)||1);
-        updateQuote();
-      });
-    }
+    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
 
     const complexitySel = wrap.querySelector('.complexity');
     complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
@@ -611,15 +524,15 @@
     addCamHours.addEventListener('input', (e)=>{ svc.addons.addCamHours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
     wrap.querySelector('.lighting').addEventListener('change', (e)=>{ svc.addons.lighting = !!e.target.checked; updateQuote(); });
 
-    // Remove
-    wrap.querySelector('.remove') && wrap.querySelector('.remove').addEventListener('click', ()=>{
-      state.services = state.services.filter(x=>x.id!==svc.id);
-      wrap.remove();
-      updateQuote();
-      updateSubmitState();
-      updateDiscountBadge();
-      debouncedSendHeight();
-    });
+    // Remove card
+    const removeBtn = wrap.querySelector('.remove');
+    if (removeBtn){
+      removeBtn.addEventListener('click', ()=>{
+        state.services = state.services.filter(x=>x.id!==svc.id);
+        wrap.remove();
+        updateQuote(); updateSubmitState(); updateDiscountBadge(); debouncedSendHeight();
+      });
+    }
 
     return wrap;
   }
@@ -633,10 +546,7 @@
       lines.push(`Additional Camera ×${camQty} @ $40/hr for ${hrs} hr: $${money(camCost)}`);
       total += camCost;
     }
-    if (addons.lighting){
-      lines.push(`Lighting: $${money(100)}`);
-      total += 100;
-    }
+    if (addons.lighting){ lines.push(`Lighting: $${money(100)}`); total += 100; }
     return { total, lines };
   }
 
@@ -675,9 +585,7 @@
   }
 
   function updateQuote(){
-    const breakdown = [];
-    let grand = 0;
-
+    const breakdown = []; let grand = 0;
     state.services.forEach((svc, idx)=>{
       if (!svc.subType) return;
       const res = costForService(svc);
@@ -700,14 +608,13 @@
 
     updateSubmitState(); debouncedSendHeight();
   }
+
   function updateSubmitState(){
     const form = document.getElementById('intakeForm');
     const btn = document.getElementById('submitBtn');
     if (btn && btn.dataset.loading==='1') return; // don't fight loading UI
     const valid = form.checkValidity();
     if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
-    else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
-  }
     else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
   }
 
@@ -723,7 +630,7 @@
     // Build primary service card
     addServiceCard(true);
 
-    // Observe size changes and report height to parent (Wix)
+    // Height observers → Wix
     try{
       if (window.ResizeObserver){
         const ro = new ResizeObserver(()=>debouncedSendHeight());
@@ -731,40 +638,26 @@
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
       }
       window.addEventListener('load', sendHeight);
-      // extra pings during first seconds after load to cover font/Tailwind reflow
-      (function(){
-        const start = Date.now();
-        const t = setInterval(()=>{
-          sendHeight();
-          if (Date.now()-start > 8000) clearInterval(t);
-        }, 300);
-      })();
-      // extra pings for early layout shifts
-      (function(){
-        const start = Date.now();
-        const t = setInterval(()=>{
-          sendHeight();
-          if (Date.now() - start > 8000) clearInterval(t);
-        }, 300);
-      })();
+      // pulse pings for 8s to cover late layout shifts
+      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
-      try{
-        const mo = new MutationObserver(()=>debouncedSendHeight());
-        mo.observe(document.body, { childList:true, subtree:true, attributes:true });
-      }catch(_){/*noop*/}
-      // initial ping
+      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
       setTimeout(sendHeight, 0);
     }catch(e){ /* noop */ }
 
-
-    // Discounts listeners (self-identification only)
+    // Discount listeners (self-identification only)
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
 
     // Add another service
-    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); debouncedSendHeight(); });
+    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
+
+    // Form validation hooks
+    const formEl = document.getElementById('intakeForm');
+    formEl.addEventListener('input', updateSubmitState);
+    formEl.addEventListener('change', updateSubmitState);
 
     // Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
@@ -772,6 +665,7 @@
       const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return; // guard against double clicks
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
+
       // lock UI
       if (btn){
         btn.dataset.loading = '1';
@@ -781,7 +675,6 @@
         btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
       }
 
-      // Derive contract-brief fields from the PRIMARY service
       const primary = state.services[0] || {};
       const meta = CONFIG.staticData.pricing.find(p=>p.subType===primary.subType) || {};
       const unit = meta.priceUnit || 'flat';
@@ -806,20 +699,14 @@
         services: state.services,
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-        primaryDateTime,
-        primaryEndTime,
-        primaryVenue,
-        primaryServiceType,
-        needsAudioRecording,
+        primaryDateTime, primaryEndTime, primaryVenue, primaryServiceType, needsAudioRecording,
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
 
       try{
         if (CONFIG.mode==='api'){
-          await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, {
-            method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-          });
+          await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         } else {
           console.log('Static mode submission:', payload);
         }
@@ -836,41 +723,14 @@
         console.error(err);
         alert('Sorry, something went wrong. Please try again.');
       } finally {
-        // restore button to default state (disabled until form valid again)
         if (btn){
           btn.dataset.loading = '0';
-          btn.disabled = true;
-          btn.classList.add('btn-disabled');
-          btn.classList.remove('btn-primary','btn-loading');
+          btn.disabled = true; // remains disabled until valid again
+          btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading');
           btn.textContent = 'Submit Request';
         }
         debouncedSendHeight();
         updateSubmitState();
-      }
-    });
-        } else {
-          console.log('Static mode submission:', payload);
-        }
-      }catch(err){ console.error(err); }
-
-      alert('Thanks! We\'ve received your request.');
-      e.target.reset();
-
-      // reset in-memory state/UI
-      state.services = []; updateDiscountBadge();
-      document.getElementById('servicesContainer').innerHTML = '';
-      addServiceCard(true);
-      document.getElementById('quoteTotal').textContent = '$0.00';
-      document.getElementById('quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
-      debouncedSendHeight();
-      updateSubmitState();
-      // unlock UI for future submission
-      const btn = document.getElementById('submitBtn');
-      if (btn){
-        btn.dataset.loading = '0';
-        btn.disabled = true; // stays disabled until valid again
-        btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary');
-        btn.textContent = 'Submit Request';
       }
     });
 
