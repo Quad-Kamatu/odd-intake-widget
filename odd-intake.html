@@ -240,6 +240,17 @@
 
   // -------- HELPERS --------
   // iFrame auto-height → Wix page
+  function postHeights(px){
+    try{
+      const ts = Date.now();
+      const msg = { type:'ODD_FORM_HEIGHT', height:px, ts };
+      if (window.parent){
+        window.parent.postMessage(msg, '*');
+        // Fallback payload for older listeners
+        window.parent.postMessage({ oddIntakeHeight: px, ts }, '*');
+      }
+    }catch(_){/*noop*/}
+  }
   let __lastHeight = 0;
   function measureHeight(){
     const b = document.body, d = document.documentElement;
@@ -262,7 +273,7 @@
       const px = Math.ceil(Math.max(600, raw));
       if (Math.abs(px - __lastHeight) > 1){
         __lastHeight = px;
-        if (window.parent) window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
+        postHeights(px);
         if (immediateFollowups){
           requestAnimationFrame(()=>sendHeight(false));
           setTimeout(()=>sendHeight(false), 60);
@@ -767,10 +778,12 @@
           success.style.display='';
         }
         // Force a strong round of height pings so the Wix section shrinks to the
-        // confirmation card size even on slower embeds.
+        // confirmation card size even on slower embeds, and emit a SUCCESS signal.
         __lastHeight = 0; // ensure we always emit at least one message after swap
+        const nowH = measureHeight();
+        postHeights(nowH);
+        if (window.parent) window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, '*');
         sendHeight(true);
-        const _hStart = Date.now();
         const _hInt = setInterval(()=>sendHeight(true), 200);
         setTimeout(()=>clearInterval(_hInt), 2000);
       }catch(err){
