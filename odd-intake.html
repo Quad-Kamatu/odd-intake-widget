@@ -245,7 +245,8 @@
     ];
     return Math.max.apply(null, vals.filter(n=>Number.isFinite(n)));
   }
-  function sendHeight(immediateFollowups=true){
+  function sendHeight(immediateFollowups){
+    if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
     try{
       const raw = measureHeight();
       const px = Math.ceil(Math.max(600, raw));
@@ -655,13 +656,13 @@
       }
       window.addEventListener('load', ()=>sendHeight(true));
       // pulse pings for 8s to cover late layout shifts
-      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
+      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
       try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
-      setTimeout(sendHeight, 0);
+      setTimeout(()=>sendHeight(true), 0);
     }catch(e){ /* noop */ }
 
     // Discount listeners (self-identification only)
