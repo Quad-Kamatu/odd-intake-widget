@@ -42,8 +42,8 @@
     .row{ display:grid; grid-template-columns:1fr; gap:16px; }
     @media(min-width:768px){ .row{ grid-template-columns:1fr 1fr; } }
     .btn{ display:inline-flex; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-weight:700; border:1px solid #222; transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
-    .btn-primary{ background:#FF9D76; border-color:#FF9D76; color:#fff; }
-    .btn-primary:hover, .btn-primary:focus-visible{ background:#76F1FF; border-color:#76F1FF; color:#111; }
+    .btn-primary, .btn-primary:link, .btn-primary:visited{ background:#FF9D76 !important; border-color:#FF9D76 !important; color:#fff !important; }
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:focus-visible, .btn-primary:active{ background:#76F1FF !important; border-color:#76F1FF !important; color:#111 !important; }
     .btn-disabled{ background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; cursor:not-allowed; }
     .badge{ display:inline-block; border-radius:9999px; font-size:.85rem; padding:6px 10px; border:1px solid #ccc; background:#f3f3f3; color:#111; }
     .mono{ font-variant-numeric: tabular-nums; }
@@ -197,7 +197,6 @@
     <div class="mt-4">
       <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
     </div>
-  </div>
   </div>
   </div>
 
@@ -768,6 +767,7 @@
           success.style.display='';
         }
         sendHeight(true);
+        debouncedSendHeight();
       }catch(err){
         console.error(err);
         alert('Sorry, something went wrong. Please try again.');
