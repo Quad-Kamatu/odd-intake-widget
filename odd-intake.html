@@ -273,8 +273,6 @@
   const money = (n) => (Number(n)||0).toFixed(2);
   const esc = (s) => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
-
-  $1
   // --- Time helpers for Discord/email (primary service) ---
   function to12h(h, m){ const ampm = h>=12 ? 'PM' : 'AM'; let hh = h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){
@@ -684,6 +682,12 @@
       window.addEventListener('load', sendHeight);
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
+      document.addEventListener('click', debouncedSendHeight);
+      window.addEventListener('resize', debouncedSendHeight);
+      try{
+        const mo = new MutationObserver(()=>debouncedSendHeight());
+        mo.observe(document.body, { childList:true, subtree:true, attributes:true });
+      }catch(_){/*noop*/}
       // initial ping
       setTimeout(sendHeight, 0);
     }catch(e){ /* noop */ }
@@ -711,54 +715,55 @@
       const needsAudioRecording = (isVideography(primary.subType) && !isVideoEditing(primary.subType))
         ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : ''))
         : '';
-      const requestedProvidersVal = document.getElementById('requestedProviders')?.value || '';
-      const mailingVal = (document.querySelector('input[name="mailing"]:checked')?.value || 'no');
+
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
         email: document.getElementById('emailInput').value.trim().toLowerCase(),
         organizationName: document.getElementById('orgInput')?.value || '',
-        discountAppliedPercent: bestDiscountPercent(),
+        // discounts (self-identification only)
         discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
-        services: state.services,
-        mailingOptIn: (mailingVal === 'yes'),
+        discountAppliedPercent: bestDiscountPercent(),
+        // mailing
+        mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
+        // notes & providers
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
-        requestedProviders: requestedProvidersVal,
+        requestedProviders: document.getElementById('requestedProviders')?.value || '',
+        // services and estimate
+        services: state.services,
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-        // Contract-brief top-level fields used by Apps Script → Discord/email
+        // primary/contract brief
         primaryDateTime,
         primaryEndTime,
         primaryVenue,
         primaryServiceType,
-        requestedProviders: requestedProvidersVal,
         needsAudioRecording,
-        // Agreements
+        // agreements
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
-        bookingAcknowledge: !!document.getElementById('understandCheck')?.checked,
-        // Contract-brief top-level fields for Apps Script → Discord/email
-        primaryDateTime,
-        primaryEndTime,
-        primaryVenue,
-        primaryServiceType,
-        requestedProviders,
-        needsAudioRecording
+        bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
 
-      if (CONFIG.mode==='api'){
-        try{ await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); }catch(err){ console.error(err); }
-      } else {
-        console.log('Static mode submission:', payload);
-      }
+      try{
+        if (CONFIG.mode==='api'){
+          await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, {
+            method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+          });
+        } else {
+          console.log('Static mode submission:', payload);
+        }
+      }catch(err){ console.error(err); }
 
       alert('Thanks! We\'ve received your request.');
       e.target.reset();
+
       // reset in-memory state/UI
       state.services = []; updateDiscountBadge();
       document.getElementById('servicesContainer').innerHTML = '';
       addServiceCard(true);
       document.getElementById('quoteTotal').textContent = '$0.00';
-      document.getElementById('quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; debouncedSendHeight();
+      document.getElementById('quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
+      debouncedSendHeight();
       updateSubmitState();
     });
 
