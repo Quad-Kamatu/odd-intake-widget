@@ -104,6 +104,10 @@
 
     /* No extra gap after the final block in a service card */
     .service-card > :last-child{ margin-bottom:0 !important; }
+    /* Spinner */
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+    .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
+    .btn.btn-loading{ cursor:progress; }
   </style>
 </head>
 <body class="text-gray-900">
@@ -358,7 +362,7 @@
       </div>
       <div class="row">
         <label class="block">
-          <span class="lbl">Service Type *</span>
+          <span class="lbl">Service Type *<//span>
           <select class="inp serviceType" required></select>
         </label>
         <label class="block">
@@ -460,28 +464,22 @@
 
     // Reset all service-specific inputs & state inside this card
     function resetServiceUI(){
-      // Reset state
       svc.hours = 1; svc.units = 1; svc.complexity = 'simple';
       svc.addons = { addCamQty:0, addCamHours:1, lighting:false };
       svc.audio = null;
-      // Clear service-specific inputs
       const hoursEl = wrap.querySelector('.hours'); if (hoursEl) hoursEl.value = 1;
       const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.value = 1;
       const headEl  = wrap.querySelector('.headshots'); if (headEl) headEl.value = 1;
       const filmEl  = wrap.querySelector('.filmSlider'); if (filmEl) { filmEl.value = 1; updateSliderFill(filmEl); }
       const compSel = wrap.querySelector('.complexity'); if (compSel) compSel.value = 'simple';
       const help    = wrap.querySelector('.help'); if (help) help.textContent = '';
-      // Audio radios
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-      // Add-ons controls
       const camSel = wrap.querySelector('.addCam'); if (camSel) camSel.value = '0';
       const camHours = wrap.querySelector('.addCamHours'); if (camHours) camHours.value = 1;
       const camHoursWrap = wrap.querySelector('.addCamHoursWrap'); if (camHoursWrap) camHoursWrap.style.display = 'none';
       const light = wrap.querySelector('.lighting'); if (light) light.checked = false;
-      // Hide dynamic groups
       const hide = sel => { const el = wrap.querySelector(sel); if (el) el.style.display = 'none'; };
       hide('.addonsWrap'); hide('.addCamWrap'); hide('.lightingWrap'); hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow');
-      // Event/date/location also cleared since service is changing
       const dateEl = wrap.querySelector('.date'); if (dateEl) { dateEl.value=''; dateEl.required=false; }
       const timeEl = wrap.querySelector('.time'); if (timeEl) { timeEl.value=''; timeEl.required=false; }
       const locEl  = wrap.querySelector('.location'); if (locEl) { locEl.value=''; locEl.required=false; }
@@ -495,11 +493,9 @@
       subSel.disabled = false;
       svc.serviceKey = key; svc.subType = '';
       updateQuote();
-      // ensure height adjusts when subtype menu appears
       debouncedSendHeight();
     }
 
-    // Show/hide fields based on selected service
     function toggleForSub(){
       const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
       if (!meta){ debouncedSendHeight(); return; }
@@ -521,6 +517,12 @@
       wrap.querySelector('.hours').required = (unit==='perHour');
       const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
       const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
+
+      // Initialize units from headshots when applicable
+      if (unit==='perHeadshot'){
+        const h = wrap.querySelector('.headshots');
+        if (h){ svc.units = Math.max(1, Number(h.value)||1); }
+      }
 
       // Complexity (only for Video Editing & Dance Film Production when perMinute)
       const showComplexity = serviceEligibleForComplexity(svc.subType) && unit==='perMinute';
@@ -554,14 +556,38 @@
     // Type & Sub-type listeners
     typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); });
     subSel.addEventListener('change', () => { svc.subType = subSel.value; toggleForSub(); updateQuote(); });
-    // Initial population of sub-services
     refreshSubs();
+
+    // Quantity & length controls
     wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
-    const unitsInput = wrap.querySelector('.units');
+
     const filmSlider = wrap.querySelector('.filmSlider');
-    updateSliderFill(filmSlider);
-    unitsInput.addEventListener('input', (e)=>{ svc.units = Math.max(0.5, Number(e.target.value)||0.5); filmSlider.value = svc.units; updateSliderFill(filmSlider); updateQuote(); });
-    filmSlider.addEventListener('input', (e)=>{ svc.units = Number(e.target.value)||1; unitsInput.value = svc.units; updateSliderFill(filmSlider); updateQuote(); });
+    const unitsInput = wrap.querySelector('.units');
+    if (filmSlider){
+      updateSliderFill(filmSlider);
+      filmSlider.addEventListener('input',(e)=>{
+        svc.units = Number(e.target.value)||1;
+        if (unitsInput) unitsInput.value = svc.units;
+        updateSliderFill(filmSlider);
+        updateQuote();
+      });
+    }
+    if (unitsInput){
+      unitsInput.addEventListener('input',(e)=>{
+        svc.units = Number(e.target.value)||1;
+        if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); }
+        updateQuote();
+      });
+    }
+
+    const headshotsInput = wrap.querySelector('.headshots');
+    if (headshotsInput){
+      headshotsInput.addEventListener('input', (e)=>{
+        svc.units = Math.max(1, Number(e.target.value)||1);
+        updateQuote();
+      });
+    }
+
     const complexitySel = wrap.querySelector('.complexity');
     complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
 
@@ -591,7 +617,7 @@
       wrap.remove();
       updateQuote();
       updateSubmitState();
-    updateDiscountBadge();
+      updateDiscountBadge();
       debouncedSendHeight();
     });
 
@@ -677,8 +703,11 @@
   function updateSubmitState(){
     const form = document.getElementById('intakeForm');
     const btn = document.getElementById('submitBtn');
+    if (btn && btn.dataset.loading==='1') return; // don't fight loading UI
     const valid = form.checkValidity();
     if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
+    else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
+  }
     else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
   }
 
@@ -740,7 +769,17 @@
     // Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      if (btn && btn.dataset.loading === '1') return; // guard against double clicks
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
+      // lock UI
+      if (btn){
+        btn.dataset.loading = '1';
+        btn.disabled = true;
+        btn.classList.add('btn-disabled','btn-loading');
+        btn.classList.remove('btn-primary');
+        btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
+      }
 
       // Derive contract-brief fields from the PRIMARY service
       const primary = state.services[0] || {};
@@ -759,25 +798,19 @@
         lastName: document.getElementById('lastNameInput').value,
         email: document.getElementById('emailInput').value.trim().toLowerCase(),
         organizationName: document.getElementById('orgInput')?.value || '',
-        // discounts (self-identification only)
         discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
         discountAppliedPercent: bestDiscountPercent(),
-        // mailing
         mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
-        // notes & providers
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
         requestedProviders: document.getElementById('requestedProviders')?.value || '',
-        // services and estimate
         services: state.services,
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-        // primary/contract brief
         primaryDateTime,
         primaryEndTime,
         primaryVenue,
         primaryServiceType,
         needsAudioRecording,
-        // agreements
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
@@ -787,6 +820,34 @@
           await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, {
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
           });
+        } else {
+          console.log('Static mode submission:', payload);
+        }
+        alert('Thanks! We\'ve received your request.');
+        e.target.reset();
+
+        // reset in-memory state/UI
+        state.services = []; updateDiscountBadge();
+        document.getElementById('servicesContainer').innerHTML = '';
+        addServiceCard(true);
+        document.getElementById('quoteTotal').textContent = '$0.00';
+        document.getElementById('quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
+      }catch(err){
+        console.error(err);
+        alert('Sorry, something went wrong. Please try again.');
+      } finally {
+        // restore button to default state (disabled until form valid again)
+        if (btn){
+          btn.dataset.loading = '0';
+          btn.disabled = true;
+          btn.classList.add('btn-disabled');
+          btn.classList.remove('btn-primary','btn-loading');
+          btn.textContent = 'Submit Request';
+        }
+        debouncedSendHeight();
+        updateSubmitState();
+      }
+    });
         } else {
           console.log('Static mode submission:', payload);
         }
@@ -803,6 +864,14 @@
       document.getElementById('quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
       debouncedSendHeight();
       updateSubmitState();
+      // unlock UI for future submission
+      const btn = document.getElementById('submitBtn');
+      if (btn){
+        btn.dataset.loading = '0';
+        btn.disabled = true; // stays disabled until valid again
+        btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary');
+        btn.textContent = 'Submit Request';
+      }
     });
 
     updateSubmitState();
