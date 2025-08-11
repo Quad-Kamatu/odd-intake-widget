@@ -259,8 +259,6 @@
         }
       }
     }catch(e){ /* noop */ }
-  }, '*');
-    }catch(e){ /* noop */ }
   }
   function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
   const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
@@ -655,7 +653,7 @@
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
         const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
       }
-      window.addEventListener('load', sendHeight);
+      window.addEventListener('load', ()=>sendHeight(true));
       // pulse pings for 8s to cover late layout shifts
       (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
       document.addEventListener('input', debouncedSendHeight);
