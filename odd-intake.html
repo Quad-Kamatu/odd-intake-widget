@@ -269,13 +269,18 @@
   const esc = (s) => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
 
-  // --- Slider fill helper ---
-  function updateSliderFill(el){
-    if(!el) return;
-    const min = parseFloat(el.min)||0; const max = parseFloat(el.max)||100; const val = parseFloat(el.value)||0;
-    const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
-    el.style.setProperty('--val', pct + '%');
+  $1
+  // --- Time helpers for Discord/email (primary service) ---
+  function to12h(h, m){ const ampm = h>=12 ? 'PM' : 'AM'; let hh = h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
+  function addHoursToTime(timeStr, hours){
+    if(!timeStr) return '';
+    const [hStr,mStr='0'] = String(timeStr).split(':');
+    const h = parseInt(hStr,10); const m = parseInt(mStr,10);
+    const total = h*60 + m + Math.round((Number(hours)||0)*60);
+    const nh = ((Math.floor(total/60))%24+24)%24; const nm = ((total%60)+60)%60;
+    return to12h(nh, nm);
   }
+  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
 
   function bestDiscountPercent(){
     const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
@@ -690,6 +695,19 @@
       e.preventDefault();
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
+      // Derive contract-brief fields from the PRIMARY service
+      const primary = state.services[0] || {};
+      const meta = CONFIG.staticData.pricing.find(p=>p.subType===primary.subType) || {};
+      const unit = meta.priceUnit || 'flat';
+      const primaryDateTime = combineDateTime(primary.date, primary.time);
+      const primaryEndTime  = (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '';
+      const primaryVenue    = primary.location || '';
+      const primaryServiceType = primary.subType || '';
+      const needsAudioRecording = (isVideography(primary.subType) && !isVideoEditing(primary.subType))
+        ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : ''))
+        : '';
+      const requestedProviders = '';
+
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -700,7 +718,14 @@
         mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value || null),
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
         quoteTotal: document.getElementById('quoteTotal').textContent,
-        quoteBreakdown: document.getElementById('quoteBreakdown').innerText
+        quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
+        // Contract-brief top-level fields for Apps Script → Discord/email
+        primaryDateTime,
+        primaryEndTime,
+        primaryVenue,
+        primaryServiceType,
+        requestedProviders,
+        needsAudioRecording
       };
 
       if (CONFIG.mode==='api'){
