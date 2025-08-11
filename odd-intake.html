@@ -230,23 +230,40 @@
 
   // -------- HELPERS --------
   // iFrame auto-height → Wix page
-  function sendHeight(){
+  let __lastHeight = 0;
+  function measureHeight(){
+    const b = document.body, d = document.documentElement;
+    const se = document.scrollingElement || d;
+    const root = document.querySelector('.max-w-4xl');
+    const vals = [
+      b ? b.scrollHeight : 0,
+      d ? d.scrollHeight : 0,
+      se ? se.scrollHeight : 0,
+      b ? b.offsetHeight : 0,
+      d ? d.offsetHeight : 0,
+      root ? (root.offsetHeight + root.getBoundingClientRect().top + 16) : 0
+    ];
+    return Math.max.apply(null, vals.filter(n=>Number.isFinite(n)));
+  }
+  function sendHeight(immediateFollowups=true){
     try{
-      const b = document.body, d = document.documentElement;
-      const h = Math.max(
-        b ? b.scrollHeight : 0,
-        d ? d.scrollHeight : 0,
-        b ? b.offsetHeight : 0,
-        d ? d.offsetHeight : 0,
-        b ? b.clientHeight : 0,
-        d ? d.clientHeight : 0
-      );
-      const px = Math.ceil(Math.max(600, h));
-      window.parent && window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
+      const raw = measureHeight();
+      const px = Math.ceil(Math.max(600, raw));
+      if (Math.abs(px - __lastHeight) > 1){
+        __lastHeight = px;
+        if (window.parent) window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
+        if (immediateFollowups){
+          requestAnimationFrame(()=>sendHeight(false));
+          setTimeout(()=>sendHeight(false), 60);
+          setTimeout(()=>sendHeight(false), 180);
+        }
+      }
+    }catch(e){ /* noop */ }
+  }, '*');
     }catch(e){ /* noop */ }
   }
   function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-  const debouncedSendHeight = debounce(sendHeight, 80);
+  const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
 
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => (Number(n)||0).toFixed(2);
@@ -636,6 +653,7 @@
         const ro = new ResizeObserver(()=>debouncedSendHeight());
         ro.observe(document.body);
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
+        const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
       }
       window.addEventListener('load', sendHeight);
       // pulse pings for 8s to cover late layout shifts
