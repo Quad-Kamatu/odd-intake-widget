@@ -16,17 +16,18 @@
     /* Animatable custom angle for the gradient */
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
-    html, body { height: 100%; }
+    html, body { height: 100%; margin:0; padding:0; background:transparent; }
     body{ color:#111; position:relative; }
 
     /* Fluid, shifting gradient background */
-    body::before{
+    html::before{
       content:"";
-      position:fixed; inset:0; z-index:-1;
+      position:fixed; left:0; top:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1;
       background: linear-gradient(var(--ang), var(--c1), var(--c2), var(--c3), var(--c4));
       background-size: 200% 200%;
       animation: bg-pan 18s ease-in-out infinite alternate, bg-rotate 36s linear infinite;
       filter: saturate(1.03);
+      pointer-events:none;
     }
 
     @keyframes bg-pan { 0%{background-position:0% 0%} 50%{background-position:100% 0%} 100%{background-position:0% 100%} }
