@@ -211,12 +211,11 @@
   <script>
   // -------- CONFIG --------
   const CONFIG = {
-  mode: 'api',
-  api: {
-    baseUrl: 'https://www.onedaydance.com/_functions',   // <-- your live domain
-    discountPath: '/discount-lookup',
-    webhookPath: '/submit'
-  },
+    mode: 'api',
+    api: {
+      baseUrl: 'https://www.onedaydance.com/_functions',
+      webhookPath: '/submit'
+    },
     staticData: {
       services: [
         { serviceKey: 'videography', serviceName: 'Videography' },
@@ -245,14 +244,12 @@
         { serviceKey: 'design', subType: 'Flyer or Postcard', basePrice: 100, priceUnit: 'flat', startingAt: true },
         { serviceKey: 'design', subType: 'Business Card', basePrice: 100, priceUnit: 'flat' },
         { serviceKey: 'design', subType: 'Web Design', basePrice: 500, priceUnit: 'flat', startingAt: true }
-      ],
-      discountRules: { 'artist@example.com': 10 }
-    }
+      ],    }
   };
 
   // -------- STATE --------
   const state = {
-    discountPercent: 0, // email/CMS-based artist discount
+    // email/CMS-based artist discount
     services: [] // array of per-section objects
   };
 
@@ -283,8 +280,16 @@
   function bestDiscountPercent(){
     const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
     const selfPct = selfVal==='odd_artist' ? 20 : (selfVal==='student' || selfVal==='nonprofit' ? 10 : 0);
-    const artist = Number(state.discountPercent)||0;
-    return Math.max(selfPct, artist);
+    return selfPct;
+  }
+
+  // Update the on-page badge based only on self-identified discount
+  function updateDiscountBadge(){
+    const pct = bestDiscountPercent();
+    const badge = document.getElementById('discountBadge');
+    if (!badge) return;
+    if (pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; }
+    else { badge.classList.add('hidden'); }
   }
 
   function createServiceState(id){
@@ -557,7 +562,8 @@
       wrap.remove();
       updateQuote();
       updateSubmitState();
-    });
+    updateDiscountBadge();
+  });
 
     return wrap;
   }
@@ -673,31 +679,8 @@
     }catch(e){ /* noop */ }
 
 
-    // Discounts listeners
-    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', updateQuote));
-
-    // Email → artist discount lookup
-    document.getElementById('emailInput').addEventListener('input', async (e)=>{
-      const email = String(e.target.value||'').trim().toLowerCase();
-      try{
-        if (CONFIG.mode==='api'){
-          const res = await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.discountPath}`,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
-          if (res.ok){ const data = await res.json(); state.discountPercent = Number(data.discountPercent)||0; } else { state.discountPercent = 0; }
-        } else {
-          state.discountPercent = Number((CONFIG.staticData.discountRules||{})[email]||0);
-        }
-      }catch{ state.discountPercent = 0; }
-      // UI badge
-      const badge = document.getElementById('discountBadge');
-      const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
-      const selfPct = selfVal==='odd_artist' ? 20 : (selfVal==='student' || selfVal==='nonprofit' ? 10 : 0);
-      const applied = Math.max(state.discountPercent, selfPct);
-      if (applied>0){
-        badge.classList.remove('hidden');
-        badge.textContent = `Discount eligible: ${applied}%`;
-      } else { badge.classList.add('hidden'); }
-      updateQuote();
-    });
+    // Discounts listeners (self-identification only)
+    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
 
     // Add another service
     document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); debouncedSendHeight(); });
@@ -729,7 +712,7 @@
       alert('Thanks! We\'ve received your request.');
       e.target.reset();
       // reset in-memory state/UI
-      state.discountPercent = 0; state.services = [];
+      state.services = []; updateDiscountBadge();
       document.getElementById('servicesContainer').innerHTML = '';
       addServiceCard(true);
       document.getElementById('quoteTotal').textContent = '$0.00';
