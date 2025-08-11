@@ -401,11 +401,11 @@
       svc.hours = 1; svc.units = 1; svc.complexity = 'simple';
       svc.addons = { addCamQty:0, addCamHours:1, lighting:false };
       svc.audio = null;
-      const hoursEl = wrap.querySelector('.hours'); if (hoursEl) hoursEl.value = 1;
-      const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.value = 1;
-      const headEl  = wrap.querySelector('.headshots'); if (headEl) headEl.value = 1;
+      const hoursEl = wrap.querySelector('.hours'); if (hoursEl){ hoursEl.value = 1; hoursEl.required = false; }
+      const unitsEl = wrap.querySelector('.units'); if (unitsEl){ unitsEl.value = 1; unitsEl.required = false; }
+      const headEl  = wrap.querySelector('.headshots'); if (headEl){ headEl.value = 1; headEl.required = false; }
       const filmEl  = wrap.querySelector('.filmSlider'); if (filmEl) { filmEl.value = 1; updateSliderFill(filmEl); }
-      const compSel = wrap.querySelector('.complexity'); if (compSel) compSel.value = 'simple';
+      const compSel = wrap.querySelector('.complexity'); if (compSel){ compSel.value = 'simple'; compSel.required = false; }
       const help    = wrap.querySelector('.help'); if (help) help.textContent = '';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
       const camSel = wrap.querySelector('.addCam'); if (camSel) camSel.value = '0';
@@ -413,7 +413,7 @@
       const camHoursWrap = wrap.querySelector('.addCamHoursWrap'); if (camHoursWrap) camHoursWrap.style.display = 'none';
       const light = wrap.querySelector('.lighting'); if (light) light.checked = false;
       const hide = sel => { const el = wrap.querySelector(sel); if (el) el.style.display = 'none'; };
-      hide('.addonsWrap'); hide('.addCamWrap'); hide('.lightingWrap'); hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow');
+      hide('.addonsWrap'); hide('.addCamWrap'); hide('.lightingWrap'); hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
       const dateEl = wrap.querySelector('.date'); if (dateEl) { dateEl.value=''; dateEl.required=false; }
       const timeEl = wrap.querySelector('.time'); if (timeEl) { timeEl.value=''; timeEl.required=false; }
       const locEl  = wrap.querySelector('.location'); if (locEl) { locEl.value=''; locEl.required=false; }
@@ -426,6 +426,8 @@
       subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
       subSel.disabled = false;
       svc.serviceKey = key; svc.subType = '';
+      // Hide any previously shown fields when switching categories
+      resetServiceUI();
       updateQuote();
       updateSubmitState();
       debouncedSendHeight();
@@ -433,7 +435,13 @@
 
     function toggleForSub(){
       const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
-      if (!meta){ debouncedSendHeight(); return; }
+      if (!meta){
+        // No concrete service selected → ensure all dynamic rows are hidden
+        resetServiceUI();
+        updateSubmitState();
+        debouncedSendHeight();
+        return;
+      }
       const unit = meta.priceUnit || 'flat';
       const isEvent = ['photography','videography'].includes(meta.serviceKey);
 
@@ -488,7 +496,7 @@
     }
 
     // Type & Sub-type listeners
-    typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); });
+    typeSel.addEventListener('change', () => { resetServiceUI(); refreshSubs(); updateQuote(); });
     subSel.addEventListener('change', () => { svc.subType = subSel.value; toggleForSub(); updateQuote(); });
     refreshSubs();
 
