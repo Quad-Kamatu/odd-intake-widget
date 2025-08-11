@@ -260,19 +260,38 @@
 
   // -------- HELPERS --------
   // ---- iFrame auto-height helpers for Wix ----
-  const debounce = (fn, ms=60) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); }; };
   function sendHeight(){
-    try{
-      const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-      window.parent && window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:h }, '*');
-    }catch(e){ /* noop */ }
-  }
+  try{
+    const b = document.body, d = document.documentElement;
+    const h = Math.max(
+      b ? b.scrollHeight : 0,
+      d ? d.scrollHeight : 0,
+      b ? b.offsetHeight : 0,
+      d ? d.offsetHeight : 0,
+      b ? b.clientHeight : 0,
+      d ? d.clientHeight : 0
+    );
+    const px = Math.ceil(Math.max(600, h));
+    window.parent && window.parent.postMessage({ type:'ODD_FORM_HEIGHT', height:px }, '*');
+  }catch(e){ /* noop */ }
+}
+
+  function debounce(fn, wait=80){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
+
   const debouncedSendHeight = debounce(sendHeight, 80);
 
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => (Number(n)||0).toFixed(2);
   const esc = (s) => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
+  function updateSliderFill(el){
+    if(!el) return;
+    const min = parseFloat(el.min)||0;
+    const max = parseFloat(el.max)||100;
+    const val = parseFloat(el.value)||0;
+    const pct = (max>min) ? ((val - min)/(max - min))*100 : 0;
+    el.style.setProperty('--val', pct + '%');
+  }
   // --- Time helpers for Discord/email (primary service) ---
   function to12h(h, m){ const ampm = h>=12 ? 'PM' : 'AM'; let hh = h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){
@@ -469,52 +488,15 @@
       hide('.eventRow'); hide('.locationRow');
     }
 
-    function refreshSubs(){
-      const key = typeSel.value;
-      const subs = CONFIG.staticData.pricing.filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
-      subSel.disabled = false;
-      svc.serviceKey = key; svc.subType = '';
-      updateQuote();
+    function refreshSubs(){$1updateQuote();
+      debouncedSendHeight();
     }
-    typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); });
+    typeSel.addEventListener('change', () => { refreshSubs(); resetServiceUI(); updateQuote(); debouncedSendHeight(); });
     refreshSubs();
 
-    function toggleForSub(){
-      const svcMeta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
-      if (!svcMeta) return;
-      const unit = svcMeta.priceUnit || 'flat';
-
-      // Event fields (photo or video)
-      const isEvent = ['photography','videography'].includes(svcMeta.serviceKey);
-      wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.date').required = isEvent;
-      wrap.querySelector('.time').required = isEvent;
-      wrap.querySelector('.location').required = isEvent;
-
-      // Hours / film length / headshots visibility
-      wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
-      wrap.querySelector('.filmLenWrap').style.display = unit==='perMinute' ? '' : 'none';
-      wrap.querySelector('.headshotRow').style.display = unit==='perHeadshot' ? '' : 'none';
-      // Hide the Hours input whenever pricing is per-minute (e.g., Dance Film Production, Video Editing)
-      const hoursWrapEl = wrap.querySelector('.hoursWrap');
-      hoursWrapEl.style.display = (unit==='perHour') ? '' : 'none';
-      wrap.querySelector('.hours').required = (unit==='perHour');
-      wrap.querySelector('.units').required = (unit==='perMinute');
-      wrap.querySelector('.headshots') && (wrap.querySelector('.headshots').required = (unit==='perHeadshot'));
-
-      // Complexity ONLY for Video Editing & Dance Film Production
-      const showComplexity = serviceEligibleForComplexity(svc.subType) && unit==='perMinute';
-      wrap.querySelector('.complexityWrap').style.display = showComplexity ? '' : 'none';
-      wrap.querySelector('.complexity').required = showComplexity;
-      const help = wrap.querySelector('.help');
-      help.textContent = showComplexity ? (
-        {
-          simple: 'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
-          moderate: 'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
-          complex: 'Complex: advanced compositing, 3D, heavy VFX, or generative AI.'
-        }[wrap.querySelector('.complexity').value] || ''
+    function toggleForSub(){$1
+      debouncedSendHeight();
+    }[wrap.querySelector('.complexity').value] || ''
       ) : '';
 
       // Audio (all videography except Video Editing)
@@ -571,7 +553,8 @@
       updateQuote();
       updateSubmitState();
     updateDiscountBadge();
-  });
+      debouncedSendHeight();
+    });
 
     return wrap;
   }
@@ -680,6 +663,14 @@
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
       }
       window.addEventListener('load', sendHeight);
+      // extra pings for early layout shifts
+      (function(){
+        const start = Date.now();
+        const t = setInterval(()=>{
+          sendHeight();
+          if (Date.now() - start > 8000) clearInterval(t);
+        }, 300);
+      })();
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
