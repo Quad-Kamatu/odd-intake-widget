@@ -187,6 +187,11 @@
             <textarea id="additionalInfo" rows="3" class="inp" placeholder="Anything else we should know?"></textarea>
           </label>
 
+          <label class="block">
+            <span class="lbl">Requested providers (optional)</span>
+            <input id="requestedProviders" type="text" class="inp" placeholder="e.g., preferred videographer/photographer names" />
+          </label>
+
           <label class="flex items-start gap-3">
             <input id="tosCheck" type="checkbox" required class="mt-1" />
             <span class="text-sm">I have read and agree to the <a class="link" href="https://www.onedaydance.com/terms" target="_blank" rel="noopener">Terms of Service</a> *</span>
@@ -706,19 +711,31 @@
       const needsAudioRecording = (isVideography(primary.subType) && !isVideoEditing(primary.subType))
         ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : ''))
         : '';
-      const requestedProviders = '';
-
+      const requestedProvidersVal = document.getElementById('requestedProviders')?.value || '';
+      const mailingVal = (document.querySelector('input[name="mailing"]:checked')?.value || 'no');
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
         email: document.getElementById('emailInput').value.trim().toLowerCase(),
         organizationName: document.getElementById('orgInput')?.value || '',
         discountAppliedPercent: bestDiscountPercent(),
+        discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
         services: state.services,
-        mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value || null),
+        mailingOptIn: (mailingVal === 'yes'),
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
+        requestedProviders: requestedProvidersVal,
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
+        // Contract-brief top-level fields used by Apps Script → Discord/email
+        primaryDateTime,
+        primaryEndTime,
+        primaryVenue,
+        primaryServiceType,
+        requestedProviders: requestedProvidersVal,
+        needsAudioRecording,
+        // Agreements
+        tosAccepted: !!document.getElementById('tosCheck')?.checked,
+        bookingAcknowledge: !!document.getElementById('understandCheck')?.checked,
         // Contract-brief top-level fields for Apps Script → Discord/email
         primaryDateTime,
         primaryEndTime,
