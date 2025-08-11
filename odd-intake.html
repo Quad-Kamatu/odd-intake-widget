@@ -766,8 +766,13 @@
           `;
           success.style.display='';
         }
+        // Force a strong round of height pings so the Wix section shrinks to the
+        // confirmation card size even on slower embeds.
+        __lastHeight = 0; // ensure we always emit at least one message after swap
         sendHeight(true);
-        debouncedSendHeight();
+        const _hStart = Date.now();
+        const _hInt = setInterval(()=>sendHeight(true), 200);
+        setTimeout(()=>clearInterval(_hInt), 2000);
       }catch(err){
         console.error(err);
         alert('Sorry, something went wrong. Please try again.');
