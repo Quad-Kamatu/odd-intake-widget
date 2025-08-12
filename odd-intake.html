@@ -364,7 +364,7 @@
       <div class="row headshotRow" style="display:none;">
         <label class="block">
           <span class="lbl">Number of Headshots *</span>
-          <input type="number" min="1" value="1" class="inp headshots" />
+          <input type="number" min="1" max="50" step="1" value="1" class="inp headshots" />
         </label>
       </div>
 
@@ -486,7 +486,14 @@
       const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
 
       if (unit==='perHeadshot'){
-        const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); }
+        const h = wrap.querySelector('.headshots');
+        if (h){
+          h.max = 50;
+          let v = Math.round(Number(h.value)||1);
+          v = Math.max(1, Math.min(50, v));
+          h.value = v;
+          svc.units = v;
+        }
       }
 
       // Complexity (only for Video Editing & Dance Film Production when perMinute)
@@ -548,7 +555,15 @@
     }
 
     const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
+    if (headshotsInput){
+      headshotsInput.addEventListener('input', (e)=>{
+        let v = Math.round(Number(e.target.value)||1);
+        v = Math.max(1, Math.min(50, v));
+        e.target.value = v;
+        svc.units = v;
+        updateQuote();
+      });
+    }
 
     const complexitySel = wrap.querySelector('.complexity');
     complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
