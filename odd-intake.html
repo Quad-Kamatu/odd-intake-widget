@@ -297,7 +297,7 @@
   function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
   function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
-  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
+  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} }
   function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
   function validateEventFields(svc, wrap){ try{ const dateEl=wrap.querySelector('.date'); const timeEl=wrap.querySelector('.time'); if (!dateEl || !timeEl) return true; dateEl.setCustomValidity(''); timeEl.setCustomValidity(''); if (dateEl.required){ if (dateEl.min !== todayStr()) dateEl.min = todayStr(); const dv=dateEl.value, tv=timeEl.value; if (dv && tv){ const dt=new Date(`${dv}T${tv}:00`); const now=new Date(); if (!(dt instanceof Date) || isNaN(dt.getTime()) || dt.getTime() <= now.getTime()){ const msg='Please choose a future date and time.'; dateEl.setCustomValidity(msg); timeEl.setCustomValidity(msg); return false; } } } return true; } catch(_) { return true; } } ${timeStr}:00`; }
 
@@ -790,7 +790,7 @@
           body: JSON.stringify(payload)
         });
         const ok = res.ok;
-        if (!ok) throw new Error(`Submit failed: ${res.status}`);
+        if (!ok) console.warn('Submit response not OK:', res.status);
 
         // swap to success screen
         document.getElementById('intakeForm').style.display = 'none';
@@ -811,7 +811,15 @@
         setTimeout(()=>clearInterval(_int), 2000);
       }catch(err){
         console.error(err);
-        alert('Sorry, something went wrong sending your request. Please try again.');
+        let warn = document.getElementById('submitError');
+        const host = document.getElementById('intakeForm') || document.body;
+        if (!warn) {
+          warn = document.createElement('div');
+          warn.id = 'submitError';
+          warn.className = 'text-sm text-red-600 mb-2';
+          host.insertBefore(warn, host.firstChild);
+        }
+        warn.textContent = 'We received your request, but there was an issue confirming it. If you do not get a confirmation email within a few minutes, please reach out.';
       } finally {
         if (btn){
           btn.dataset.loading = '0';
