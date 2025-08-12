@@ -802,9 +802,6 @@
         if (!ok) console.warn('Submit response not OK:', res.status);
 
         // swap to success screen
-        document.getElementById('intakeForm').style.display = 'none';
-        const idCard = document.getElementById('identityCard'); if (idCard) idCard.style.display = 'none';
-        const header = document.getElementById('pageHeader'); if (header) header.style.display = 'none';
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
@@ -812,6 +809,11 @@
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
         }
+        // Hard-remove pre-success blocks to avoid host CSS re-showing them
+        ['intakeForm','identityCard','pageHeader'].forEach(id=>{
+          const el = document.getElementById(id);
+          if (el) { try { el.remove(); } catch(_) { el.style.display='none'; } }
+        });
         // ensure an immediate height push after DOM swap
         sendHeight(true, true)
         // Fire success messages and strong height pings
