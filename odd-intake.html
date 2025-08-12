@@ -253,24 +253,22 @@
   }
   let __lastHeight = 0;
   function measureHeight(){
-    const b = document.body, d = document.documentElement;
-    const se = document.scrollingElement || d;
+    // Measure only the actual widget container so we can shrink below viewport height
     const root = document.querySelector('.max-w-4xl');
-    const vals = [
-      b ? b.scrollHeight : 0,
-      d ? d.scrollHeight : 0,
-      se ? se.scrollHeight : 0,
-      b ? b.offsetHeight : 0,
-      d ? d.offsetHeight : 0,
-      root ? (root.offsetHeight + root.getBoundingClientRect().top + 16) : 0
-    ];
-    return Math.max.apply(null, vals.filter(n=>Number.isFinite(n)));
+    if (root){
+      const rect = root.getBoundingClientRect();
+      // rect.bottom is distance from viewport top to the bottom of content
+      return Math.ceil(rect.bottom + 8); // small pad
+    }
+    // Fallback
+    const d = document.documentElement;
+    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
   }
   function sendHeight(immediateFollowups){
     if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
     try{
       const raw = measureHeight();
-      const px = Math.ceil(Math.max(600, raw));
+      const px = Math.ceil(raw);
       if (Math.abs(px - __lastHeight) > 1){
         __lastHeight = px;
         postHeights(px);
