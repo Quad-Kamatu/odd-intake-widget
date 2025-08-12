@@ -803,6 +803,8 @@
 
         // swap to success screen
         document.getElementById('intakeForm').style.display = 'none';
+        const idCard = document.getElementById('identityCard'); if (idCard) idCard.style.display = 'none';
+        const header = document.getElementById('pageHeader'); if (header) header.style.display = 'none';
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
