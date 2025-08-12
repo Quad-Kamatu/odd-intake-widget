@@ -264,12 +264,17 @@
 
   let __lastHeight = 0;
   function measureHeight(){
-    // Prefer intrinsic content height of the main container
+    // Measure only the actual widget container so we can shrink below viewport height
     const root = document.querySelector('.max-w-4xl');
     if (root){
-      const h = Math.ceil((root.scrollHeight || root.offsetHeight || 0) + 8);
-      return h;
+      const rect = root.getBoundingClientRect();
+      // rect.bottom is distance from viewport top to the bottom of content
+      return Math.ceil(rect.bottom + 8); // small pad to avoid off‑by‑one clipping
     }
+    // Fallback (works in older Wix iframes)
+    const d = document.documentElement;
+    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
+  }
     // Robust fallback: document metrics
     const b = document.body, d = document.documentElement;
     return Math.ceil(Math.max(
