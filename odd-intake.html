@@ -249,6 +249,16 @@
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
       const msgLegacy = { oddIntakeHeight: px, ts };
       if (window.parent){
+        const origins = Array.from(new Set([window.location.origin, ...(ALLOWED_PARENTS||[])]));
+        origins.forEach(origin=>{
+          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
+          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
+        });
+      }
+    }catch(_){/*noop*/}
+  };
+      const msgLegacy = { oddIntakeHeight: px, ts };
+      if (window.parent){
         (ALLOWED_PARENTS||[]).forEach(origin=>{
           try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
@@ -273,12 +283,12 @@
       d ? d.offsetHeight : 0
     ));
   }
-  function sendHeight(immediateFollowups){
+  function sendHeight(immediateFollowups, force=false){
     if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
     try{
       const raw = measureHeight();
       const px = Math.ceil(raw);
-      if (Math.abs(px - __lastHeight) > 1){
+      if (force || Math.abs(px - __lastHeight) > 1) {
         __lastHeight = px;
         postHeights(px);
         if (immediateFollowups){
@@ -730,7 +740,7 @@
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
       try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
-      setTimeout(()=>sendHeight(true), 0);
+      setTimeout(()=>sendHeight(true, true), 0);
     }catch(e){ /* noop */ }
 
     // Discount listeners (self-identification only)
@@ -808,6 +818,8 @@
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
         }
+        // ensure an immediate height push after DOM swap
+        sendHeight(true, true)
         // Fire success messages and strong height pings
         const nowH = measureHeight();
         (ALLOWED_PARENTS||[]).forEach(origin=>{
