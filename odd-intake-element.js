@@ -1,806 +1,102 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Odd Embeddable Intake Widget</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root{
-      --c1:#FF9D76; /* coral */
-      --c2:#76F1FF; /* cyan */
-      --c3:#C176FF; /* violet */
-      --c4:#FFE176; /* saffron */
-    }
+// odd-intake-element.js
+class OddIntakeElement extends HTMLElement {
+  static get observedAttributes() { return ['src', 'min-height', 'scroll-into-view-on-success']; }
 
-    /* Animatable custom angle for the gradient */
-    @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._minHeight = 280;          // ← lowered default so it can shrink after submit
+    this._currentHeight = 0;
+    this._successNudge = null;
+    this._onMessage = this._onMessage.bind(this);
 
-    html, body { height: 100%; margin:0; padding:0; background:transparent; }
-    body{ color:#111; position:relative; }
-
-    /* Fluid, shifting gradient background */
-    html::before{
-      content:"";
-      position:fixed; left:0; top:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1;
-      background: linear-gradient(var(--ang), var(--c1), var(--c2), var(--c3), var(--c4));
-      background-size: 200% 200%;
-      animation: bg-pan 18s ease-in-out infinite alternate, bg-rotate 36s linear infinite;
-      filter: saturate(1.03);
-      pointer-events:none;
-    }
-
-    @keyframes bg-pan { 0%{background-position:0% 0%} 50%{background-position:100% 0%} 100%{background-position:0% 100%} }
-    @keyframes bg-rotate { to { --ang: 360deg; } }
-
-    @media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
-
-    .card{ box-shadow:0 8px 20px rgba(0,0,0,.06); border-radius:16px; background:#fff; padding:24px; border:1px solid #eaeaea; }
-    .lbl{ font-size:0.9rem; font-weight:600; color:#222; }
-    .inp{ width:100%; margin-top:4px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; outline:none; }
-    .inp:focus{ border-color:#111; box-shadow:0 0 0 2px rgba(0,0,0,.08); }
-    .row{ display:grid; grid-template-columns:1fr; gap:16px; }
-    @media(min-width:768px){ .row{ grid-template-columns:1fr 1fr; } }
-    .btn{ display:inline-flex; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-weight:700; border:1px solid #222; transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
-    .btn-primary, .btn-primary:link, .btn-primary:visited{ background:#FF9D76 !important; border-color:#FF9D76 !important; color:#fff !important; }
-    .btn-primary:hover, .btn-primary:focus, .btn-primary:focus-visible, .btn-primary:active{ background:#76F1FF !important; border-color:#76F1FF !important; color:#111 !important; }
-    .btn-disabled{ background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; cursor:not-allowed; }
-    .badge{ display:inline-block; border-radius:9999px; font-size:.85rem; padding:6px 10px; border:1px solid #ccc; background:#f3f3f3; color:#111; }
-    .mono{ font-variant-numeric: tabular-nums; }
-    .muted{ opacity:.6; }
-    a.link{ color:#111; text-decoration:underline; }
-    .service-card{ border:1px dashed #e5e7eb; border-radius:16px; padding:16px; }
-    .page-title, .page-subtitle{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); }
-
-    /* Film length slider styles */
-    .filmSlider{ --val:0%; accent-color:#76F1FF; height:2rem; width:100%; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); border-radius:9999px; }
-    .filmSlider:focus{ outline:none; }
-    /* WebKit */
-    .filmSlider::-webkit-slider-runnable-track{ height:6px; border-radius:9999px; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); }
-    .filmSlider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; margin-top:-6px; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-    .filmSlider:focus::-webkit-slider-thumb{ box-shadow:0 0 0 4px rgba(118,241,255,.25); }
-    /* Firefox */
-    .filmSlider::-moz-range-track{ height:6px; border-radius:9999px; background:#dbeafe; }
-    .filmSlider::-moz-range-progress{ height:6px; border-radius:9999px; background:#76F1FF; }
-    .filmSlider::-moz-range-thumb{ width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-
-    /* Consistent spacing for dynamic question groups inside each service card */
-    .service-card .row,
-    .service-card .eventRow,
-    .service-card .locationRow,
-    .service-card .qtyRow,
-    .service-card .headshotRow,
-    .service-card .complexityWrap,
-    .service-card .audioWrap,
-    .service-card .addonsWrap{ margin-bottom:16px; }
-    .service-card .filmLenWrap{ margin-bottom:12px; }
-    .service-card .complexityWrap .help{ margin-top:8px; }
-    .service-card > :last-child{ margin-bottom:0 !important; }
-
-    /* Spinner */
-    @keyframes spin{ to{ transform: rotate(360deg); } }
-    .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
-    .btn.btn-loading{ cursor:progress; }
-  </style>
-</head>
-<body class="text-gray-900">
-  <div class="max-w-4xl mx-auto p-6 space-y-6">
-    <div id="pageHeader" class="mb-2">
-      <h1 class="text-2xl font-semibold page-title">Service Request</h1>
-    </div>
-
-    <!-- Identity & Discounts -->
-    <div id="identityCard" class="card">
-      <div class="grid md:grid-cols-2 gap-4">
-        <div class="space-y-4">
-          <div class="lbl">Your Info</div>
-          <div class="row">
-            <label class="block">
-              <span class="lbl">First Name *</span>
-              <input id="firstNameInput" required type="text" class="inp" placeholder="Jane" />
-            </label>
-            <label class="block">
-              <span class="lbl">Last Name *</span>
-              <input id="lastNameInput" required type="text" class="inp" placeholder="Doe" />
-            </label>
-          </div>
-          <label class="block">
-            <span class="lbl">Email *</span>
-            <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
-          </label>
-          <label class="block">
-            <span class="lbl">Organization Name (optional)</span>
-            <input id="orgInput" type="text" class="inp" placeholder="Organization (if applicable)" />
-          </label>
-        </div>
-        <div class="space-y-4">
-          <div class="lbl">Discount Qualification</div>
-          <div>
-            <div class="text-sm text-gray-700 mb-2">Do you qualify for one of these discounts? (select one)</div>
-            <div class="flex flex-col gap-2 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="none" checked /> None</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student — 10% (show student ID)</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored — 10%</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist — 20%</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Services Form -->
-    <form id="intakeForm" class="space-y-6" novalidate>
-      <!-- Services container (primary + extras) -->
-      <div id="servicesContainer" class="space-y-6"></div>
-
-      <!-- Add another service -->
-      <div class="card bg-white border border-gray-200">
-        <div class="flex items-center justify-between">
-          <div class="lbl">Additional Services</div>
-          <button id="addServiceBtn" type="button" class="btn">+ Add another service</button>
-        </div>
-      </div>
-
-      <!-- Estimate Section -->
-      <div class="card">
-        <h3 class="font-semibold mb-2">Estimate</h3>
-        <div class="grid md:grid-cols-3 gap-4 items-start">
-          <div class="md:col-span-2 card bg-gray-50 border border-gray-200">
-            <h4 class="font-semibold mb-2">Quote Breakdown</h4>
-            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">—</div></div>
-          </div>
-          <div class="space-y-3">
-            <div class="text-sm text-gray-600">Estimated Total</div>
-            <div id="quoteTotal" class="text-4xl font-extrabold mono tracking-tight">$0.00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Additional info + Agreements & Mailing List -->
-      <div class="card bg-gray-50 border border-gray-200">
-        <div class="space-y-4">
-          <label class="block">
-            <span class="lbl">Additional relevant information</span>
-            <textarea id="additionalInfo" rows="3" class="inp" placeholder="Anything else we should know?"></textarea>
-          </label>
-
-          <label class="block">
-            <span class="lbl">Requested providers (optional)</span>
-            <input id="requestedProviders" type="text" class="inp" placeholder="e.g., preferred videographer/photographer names" />
-          </label>
-
-          <label class="flex items-start gap-3">
-            <input id="tosCheck" type="checkbox" required class="mt-1" />
-            <span class="text-sm">I have read and agree to the <a class="link" href="https://www.onedaydance.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> *</span>
-          </label>
-          <label class="flex items-start gap-3">
-            <input id="understandCheck" type="checkbox" required class="mt-1" />
-            <span class="text-sm">I understand that submitting this form does not constitute confirmation of booking *</span>
-          </label>
-          <div>
-            <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
-            <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" /> Yes</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
-            </div>
-          </div>
-          <button id="submitBtn" type="submit" class="btn btn-disabled w-full" disabled>Submit Request</button>
-        </div>
-      </div>
-    </form>
-
-  <div id="successScreen" class="card" style="display:none;">
-    <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
-    <p class="text-sm text-gray-700 mb-4">We’ll follow up by email shortly.</p>
-    <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
-    <div class="mt-4">
-      <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
-    </div>
-  </div>
-  </div>
-
-  <script>
-  // -------- CONFIG --------
-  const CONFIG = {
-    mode: 'api',
-    api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit' },
-    staticData: {
-      services: [
-        { serviceKey: 'videography', serviceName: 'Videography' },
-        { serviceKey: 'photography', serviceName: 'Photography' },
-        { serviceKey: 'design', serviceName: 'Design' }
-      ],
-      pricing: [
-        // VIDEOGRAPHY
-        { serviceKey: 'videography', subType: 'Dance Reel Express', basePrice: 300, priceUnit: 'flat' },
-        { serviceKey: 'videography', subType: 'Event Videography', basePrice: 70, priceUnit: 'perHour' },
-        { serviceKey: 'videography', subType: 'Dance Film Production', basePrice: 100, priceUnit: 'perMinute', complexityBase: { simple:100, moderate:200, complex:300 } },
-        { serviceKey: 'videography', subType: 'Rehearsal Videography', basePrice: 50, priceUnit: 'perHour' },
-        { serviceKey: 'videography', subType: 'Audition Reel', basePrice: 120, priceUnit: 'flat' },
-        { serviceKey: 'videography', subType: 'Video Editing', basePrice: 75, priceUnit: 'perMinute', complexityBase: { simple:75, moderate:150, complex:250 } },
-        // PHOTOGRAPHY
-        { serviceKey: 'photography', subType: 'Event Photography', basePrice: 90, priceUnit: 'perHour' },
-        { serviceKey: 'photography', subType: 'Complete Headshot Package', basePrice: 350, priceUnit: 'flat', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Headshots à la carte (Edited)', basePrice: 40, priceUnit: 'perHeadshot', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Headshots à la carte (Simple Edit)', basePrice: 20, priceUnit: 'perHeadshot', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Rehearsal Photography', basePrice: 50, priceUnit: 'perHour' },
-        { serviceKey: 'photography', subType: 'Studio Photography', basePrice: 90, priceUnit: 'perHour', studioRequired: true },
-        // DESIGN
-        { serviceKey: 'design', subType: 'Logo Design', basePrice: 500, priceUnit: 'flat', startingAt: true },
-        { serviceKey: 'design', subType: 'Flyer or Postcard', basePrice: 100, priceUnit: 'flat', startingAt: true },
-        { serviceKey: 'design', subType: 'Business Card', basePrice: 100, priceUnit: 'flat' },
-        { serviceKey: 'design', subType: 'Web Design', basePrice: 500, priceUnit: 'flat', startingAt: true }
-      ]
-    }
-  };
-
-  // -------- STATE --------
-  const state = { services: [] };
-
-  // -------- HELPERS --------
-  // iFrame auto-height → Wix page
-  function postHeights(px){
-    try{
-      const ts = Date.now();
-      const msg = { type:'ODD_FORM_HEIGHT', height:px, ts };
-      if (window.parent){
-        window.parent.postMessage(msg, '*');
-        // Fallback payload for older listeners
-        window.parent.postMessage({ oddIntakeHeight: px, ts }, '*');
-      }
-    }catch(_){/*noop*/}
-  }
-  let __lastHeight = 0;
-  function measureHeight(){
-    // Measure only the actual widget container so we can shrink below viewport height
-    const root = document.querySelector('.max-w-4xl');
-    if (root){
-      const rect = root.getBoundingClientRect();
-      // rect.bottom is distance from viewport top to the bottom of content
-      return Math.ceil(rect.bottom + 8); // small pad
-    }
-    // Fallback
-    const d = document.documentElement;
-    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
-  }
-  function sendHeight(immediateFollowups){
-    if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
-    try{
-      const raw = measureHeight();
-      const px = Math.ceil(raw);
-      if (Math.abs(px - __lastHeight) > 1){
-        __lastHeight = px;
-        postHeights(px);
-        if (immediateFollowups){
-          requestAnimationFrame(()=>sendHeight(false));
-          setTimeout(()=>sendHeight(false), 60);
-          setTimeout(()=>sendHeight(false), 180);
-        }
-      }
-    }catch(e){ /* noop */ }
-  }
-  function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-  const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
-
-  const $ = (sel) => document.querySelector(sel);
-  const money = (n) => (Number(n)||0).toFixed(2);
-  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const uid = () => Math.random().toString(36).slice(2,9);
-  function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
-  function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
-  function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
-  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
-
-  function bestDiscountPercent(){
-    const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
-    return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0);
-  }
-  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
-
-  function createServiceState(id){ return { id, serviceKey:'', subType:'', date:'', time:'', location:'', hours:1, units:1, complexity:'simple', addons:{ addCamQty:0, addCamHours:1, lighting:false }, audio:null }; }
-  function serviceEligibleForComplexity(subType){ return ['Video Editing','Dance Film Production'].includes(subType); }
-  function cameraEligible(subType){ return ['Event Videography','Dance Film Production','Rehearsal Videography','Event Photography','Rehearsal Photography'].includes(subType); }
-  function lightingEligible(subType){ return ['Dance Film Production','Rehearsal Videography'].includes(subType); }
-  function isVideography(subType){ return CONFIG.staticData.pricing.find(p=>p.subType===subType)?.serviceKey==='videography'; }
-  function isVideoEditing(subType){ return subType==='Video Editing'; }
-
-  function buildServiceCard(svc){
-    const wrap = document.createElement('div');
-    wrap.className = 'card service-card';
-    wrap.dataset.id = svc.id;
-    wrap.innerHTML = `
-      <div class="flex items-center justify-between mb-3">
-        <div class="font-semibold">Service ${svc.id==='primary'?'(Primary)':''}</div>
-        ${svc.id!=='primary'?'<button type="button" class="btn remove">Remove</button>':''}
-      </div>
-      <div class="row">
-        <label class="block">
-          <span class="lbl">Service Type *</span>
-          <select class="inp serviceType" required></select>
-        </label>
-        <label class="block">
-          <span class="lbl">Service *</span>
-          <select class="inp subType" required disabled></select>
-        </label>
-      </div>
-      <div class="row eventRow" style="display:none;">
-        <label class="block">
-          <span class="lbl">Date *</span>
-          <input type="date" class="inp date" />
-        </label>
-        <label class="block">
-          <span class="lbl">Time *</span>
-          <input type="time" class="inp time" />
-        </label>
-      </div>
-      <label class="block locationRow" style="display:none;">
-        <span class="lbl">Location *</span>
-        <input type="text" class="inp location" placeholder="Venue / Address" />
-      </label>
-
-      <div class="row qtyRow" style="display:none;">
-        <label class="block hoursWrap">
-          <span class="lbl">Hours *</span>
-          <input type="number" min="1" value="1" class="inp hours" />
-        </label>
-        <div class="filmLenWrap" style="display:none;">
-          <label class="block">
-            <span class="lbl">Expected Film Length (minutes) *</span>
-            <input type="range" min="0.5" max="20" step="0.5" value="1" class="w-full filmSlider" />
-          </label>
-          <div class="flex items-center gap-2 mt-2">
-            <input type="number" min="0.5" step="0.5" value="1" class="inp units" />
-            <span class="text-sm text-gray-600">min</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="row headshotRow" style="display:none;">
-        <label class="block">
-          <span class="lbl">Number of Headshots *</span>
-          <input type="number" min="1" value="1" class="inp headshots" />
-        </label>
-      </div>
-
-      <div class="row complexityWrap" style="display:none;">
-        <label class="block">
-          <span class="lbl">Editing Complexity *</span>
-          <select class="inp complexity">
-            <option value="simple">Simple</option>
-            <option value="moderate">Moderate</option>
-            <option value="complex">Complex</option>
-          </select>
-        </label>
-        <div class="card bg-gray-50 border border-gray-200 text-sm text-gray-700 help"></div>
-      </div>
-
-      <div class="row audioWrap" style="display:none;">
-        <div>
-          <div class="lbl mb-2">Is audio recording necessary? *</div>
-          <div class="flex items-center gap-6 text-sm">
-            <label class="inline-flex items-center gap-2"><input type="radio" name="audio-${svc.id}" value="yes" /> Yes</label>
-            <label class="inline-flex items-center gap-2"><input type="radio" name="audio-${svc.id}" value="no" /> No</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="card bg-gray-50 border border-gray-200 addonsWrap" style="display:none;">
-        <div class="lbl mb-3">Add-ons</div>
-        <div class="grid md:grid-cols-2 gap-3 items-end">
-          <label class="block addCamWrap" style="display:none;">
-            <span class="lbl">Additional Cameras</span>
-            <select class="inp addCam">
-              <option value="0">None</option>
-              <option value="1">1 camera</option>
-              <option value="2">2 cameras</option>
-            </select>
-          </label>
-          <label class="block addCamHoursWrap" style="display:none;">
-            <span class="lbl">Estimated shoot hours (for per‑minute services)</span>
-            <input type="number" min="1" value="1" class="inp addCamHours" />
-          </label>
-          <label class="inline-flex items-center gap-3 lightingWrap" style="display:none;">
-            <input type="checkbox" class="lighting" />
-            <span>
-              <span class="font-medium">Lighting</span>
-              <span class="block text-sm text-gray-600">$100 flat</span>
-            </span>
-          </label>
-        </div>
-      </div>
+    const style = document.createElement('style');
+    style.textContent = `
+      :host { display:block; width:100%; }
+      .wrap { position:relative; width:100%; display:block; }
+      iframe { border:0; width:100%; display:block; height:${this._minHeight}px; }
     `;
 
-    // populate service types
-    const typeSel = wrap.querySelector('.serviceType');
-    typeSel.innerHTML = CONFIG.staticData.services.map(s=>`<option value="${s.serviceKey}">${s.serviceName}</option>`).join('');
-    const subSel = wrap.querySelector('.subType');
+    const wrap = document.createElement('div'); wrap.className = 'wrap';
+    this._iframe = document.createElement('iframe');
+    this._iframe.setAttribute('title', 'One Day Dance Service Request');
+    this._iframe.setAttribute('scrolling', 'no');
+    this._iframe.style.height = `${this._minHeight}px`;
 
-    function resetServiceUI(){
-      svc.hours = 1; svc.units = 1; svc.complexity = 'simple';
-      svc.addons = { addCamQty:0, addCamHours:1, lighting:false };
-      svc.audio = null;
-      const hoursEl = wrap.querySelector('.hours'); if (hoursEl){ hoursEl.value = 1; hoursEl.required = false; }
-      const unitsEl = wrap.querySelector('.units'); if (unitsEl){ unitsEl.value = 1; unitsEl.required = false; }
-      const headEl  = wrap.querySelector('.headshots'); if (headEl){ headEl.value = 1; headEl.required = false; }
-      const filmEl  = wrap.querySelector('.filmSlider'); if (filmEl) { filmEl.value = 1; updateSliderFill(filmEl); }
-      const compSel = wrap.querySelector('.complexity'); if (compSel){ compSel.value = 'simple'; compSel.required = false; }
-      const help    = wrap.querySelector('.help'); if (help) help.textContent = '';
-      wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-      const camSel = wrap.querySelector('.addCam'); if (camSel) camSel.value = '0';
-      const camHours = wrap.querySelector('.addCamHours'); if (camHours) camHours.value = 1;
-      const camHoursWrap = wrap.querySelector('.addCamHoursWrap'); if (camHoursWrap) camHoursWrap.style.display = 'none';
-      const light = wrap.querySelector('.lighting'); if (light) light.checked = false;
-      const hide = sel => { const el = wrap.querySelector(sel); if (el) el.style.display = 'none'; };
-      hide('.addonsWrap'); hide('.addCamWrap'); hide('.lightingWrap'); hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
-      const dateEl = wrap.querySelector('.date'); if (dateEl) { dateEl.value=''; dateEl.required=false; }
-      const timeEl = wrap.querySelector('.time'); if (timeEl) { timeEl.value=''; timeEl.required=false; }
-      const locEl  = wrap.querySelector('.location'); if (locEl) { locEl.value=''; locEl.required=false; }
-      hide('.eventRow'); hide('.locationRow');
+    wrap.appendChild(this._iframe);
+    this.shadowRoot.append(style, wrap);
+  }
+
+  connectedCallback() {
+    if (this.hasAttribute('min-height')) {
+      const v = parseInt(this.getAttribute('min-height'), 10);
+      if (!Number.isNaN(v)) { this._minHeight = v; this._setHeight(v); }
     }
+    if (this.hasAttribute('src')) this._load();
+    window.addEventListener('message', this._onMessage);
+  }
 
-    function refreshSubs(){
-      const key = typeSel.value;
-      const subs = CONFIG.staticData.pricing.filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
-      subSel.disabled = false;
-      svc.serviceKey = key; svc.subType = '';
-      // Hide any previously shown fields when switching categories
-      resetServiceUI();
-      updateQuote();
-      updateSubmitState();
-      debouncedSendHeight();
-    }
+  disconnectedCallback() {
+    window.removeEventListener('message', this._onMessage);
+    if (this._successNudge) clearInterval(this._successNudge);
+  }
 
-    function toggleForSub(){
-      const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
-      if (!meta){
-        // No concrete service selected → ensure all dynamic rows are hidden
-        resetServiceUI();
-        updateSubmitState();
-        debouncedSendHeight();
-        return;
+  attributeChangedCallback(name) {
+    if (name === 'src') this._load();
+    if (name === 'min-height') {
+      const v = parseInt(this.getAttribute('min-height'), 10);
+      if (!Number.isNaN(v)) {
+        this._minHeight = v;
+        this._setHeight(Math.max(v, this._currentHeight));
       }
-      const unit = meta.priceUnit || 'flat';
-      const isEvent = ['photography','videography'].includes(meta.serviceKey);
-
-      // Event basics
-      wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.date').required = isEvent;
-      wrap.querySelector('.time').required = isEvent;
-      wrap.querySelector('.location').required = isEvent;
-
-      // Quantities
-      wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
-      wrap.querySelector('.hoursWrap').style.display = (unit==='perHour') ? '' : 'none';
-      wrap.querySelector('.filmLenWrap').style.display = (unit==='perMinute') ? '' : 'none';
-      wrap.querySelector('.headshotRow').style.display = (unit==='perHeadshot') ? '' : 'none';
-      wrap.querySelector('.hours').required = (unit==='perHour');
-      const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
-      const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
-
-      if (unit==='perHeadshot'){
-        const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); }
-      }
-
-      // Complexity (only for Video Editing & Dance Film Production when perMinute)
-      const showComplexity = serviceEligibleForComplexity(svc.subType) && unit==='perMinute';
-      wrap.querySelector('.complexityWrap').style.display = showComplexity ? '' : 'none';
-      wrap.querySelector('.complexity').required = showComplexity;
-      const help = wrap.querySelector('.help');
-      help.textContent = showComplexity ? ({
-        simple:'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
-        moderate:'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
-        complex:'Complex: advanced compositing, 3D, heavy VFX, or generative AI.'
-      }[wrap.querySelector('.complexity').value] || '') : '';
-
-      // Audio (all videography except Video Editing)
-      const showAudio = isVideography(svc.subType) && !isVideoEditing(svc.subType);
-      wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
-      wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
-
-      // Add-ons
-      const camOK = cameraEligible(svc.subType);
-      const lightOK = lightingEligible(svc.subType);
-      wrap.querySelector('.addonsWrap').style.display = (camOK || lightOK) ? '' : 'none';
-      wrap.querySelector('.addCamWrap').style.display = camOK ? '' : 'none';
-      wrap.querySelector('.lightingWrap').style.display = lightOK ? '' : 'none';
-      const camQty = Number(wrap.querySelector('.addCam').value || 0);
-      wrap.querySelector('.addCamHoursWrap').style.display = (camQty>0 && unit!=='perHour') ? '' : 'none';
-
-      const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
-      updateSubmitState();
-      debouncedSendHeight();
     }
-
-    // Type & Sub-type listeners
-    typeSel.addEventListener('change', () => { resetServiceUI(); refreshSubs(); updateQuote(); });
-    subSel.addEventListener('change', () => { svc.subType = subSel.value; toggleForSub(); updateQuote(); });
-    refreshSubs();
-
-    // Quantity & length controls
-    wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
-
-    const filmSlider = wrap.querySelector('.filmSlider');
-    const unitsInput = wrap.querySelector('.units');
-    if (filmSlider){
-      updateSliderFill(filmSlider);
-      filmSlider.addEventListener('input',(e)=>{
-        svc.units = Number(e.target.value)||1;
-        if (unitsInput) unitsInput.value = svc.units;
-        updateSliderFill(filmSlider);
-        updateQuote();
-      });
-    }
-    if (unitsInput){
-      unitsInput.addEventListener('input',(e)=>{
-        svc.units = Number(e.target.value)||1;
-        if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); }
-        updateQuote();
-      });
-    }
-
-    const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
-
-    const complexitySel = wrap.querySelector('.complexity');
-    complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
-
-    // Date/time/location
-    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); });
-    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); });
-    wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); });
-
-    // Audio
-    wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); }));
-
-    // Add-ons
-    const addCamSel = wrap.querySelector('.addCam');
-    const addCamHours = wrap.querySelector('.addCamHours');
-    addCamSel.addEventListener('change', (e)=>{
-      svc.addons.addCamQty = Number(e.target.value||0);
-      const unit = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType)?.priceUnit || 'flat';
-      wrap.querySelector('.addCamHoursWrap').style.display = (svc.addons.addCamQty>0 && unit!=='perHour') ? '' : 'none';
-      updateQuote();
-    });
-    addCamHours.addEventListener('input', (e)=>{ svc.addons.addCamHours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
-    wrap.querySelector('.lighting').addEventListener('change', (e)=>{ svc.addons.lighting = !!e.target.checked; updateQuote(); });
-
-    // Remove card
-    const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){
-      removeBtn.addEventListener('click', ()=>{
-        state.services = state.services.filter(x=>x.id!==svc.id);
-        wrap.remove();
-        updateQuote(); updateSubmitState(); updateDiscountBadge(); debouncedSendHeight();
-      });
-    }
-
-    return wrap;
   }
 
-  function calcAddons(unit, addons, hours){
-    let total = 0; const lines = [];
-    const camQty = Math.min(2, Math.max(0, Number(addons.addCamQty)||0));
-    if (camQty>0){
-      const hrs = unit==='perHour' ? (Number(hours)||1) : (Number(addons.addCamHours)||1);
-      const camCost = 40 * camQty * hrs;
-      lines.push(`Additional Camera ×${camQty} @ $40/hr for ${hrs} hr: $${money(camCost)}`);
-      total += camCost;
-    }
-    if (addons.lighting){ lines.push(`Lighting: $${money(100)}`); total += 100; }
-    return { total, lines };
+  _load() {
+    const src = this.getAttribute('src') || '';
+    this._iframe.src = src;
+    this._setHeight(this._minHeight);
   }
 
-  function costForService(svc){
-    const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
-    if (!meta) return { subtotal:0, lines:[] };
-    const unit = meta.priceUnit || 'flat';
-    let baseRate = Number(meta.basePrice)||0;
-    if (unit==='perMinute' && meta.complexityBase && serviceEligibleForComplexity(svc.subType)){
-      baseRate = Number(meta.complexityBase[svc.complexity]||baseRate)||0;
-    }
-
-    const qty = unit==='perHour' ? (Number(svc.hours)||1)
-              : unit==='perMinute' ? (Number(svc.units)||1)
-              : unit==='perHeadshot' ? (Number(svc.units)||1)
-              : 1;
-
-    let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
-    const lines = [];
-    lines.push(`Base (${esc(meta.subType)} — ${esc(unit)}): $${money(base)}${meta.startingAt?'+':''}`);
-
-    // Setup fee for videography hourly
-    let setupFee = 0;
-    if (meta.serviceKey==='videography' && unit==='perHour'){
-      setupFee = (Number(meta.basePrice)||0) * 0.5;
-      if (setupFee>0) lines.push(`Setup & breakdown (0.5 hr): $${money(setupFee)}`);
-    }
-
-    if (meta.studioRequired) lines.push('Studio rental (billed separately)');
-
-    const addons = calcAddons(unit, svc.addons||{}, svc.hours);
-    addons.lines.forEach(l=>lines.push(l));
-    let subtotal = base + setupFee + addons.total;
-
-    return { subtotal, lines };
+  _setHeight(h) {
+    const px = Math.max(this._minHeight, Math.ceil(Number(h) || 0));
+    this._currentHeight = px;
+    this._iframe.style.height = px + 'px';
   }
 
-  function updateQuote(){
-    const breakdown = []; let grand = 0;
-    state.services.forEach((svc, idx)=>{
-      if (!svc.subType) return;
-      const res = costForService(svc);
-      grand += res.subtotal;
-      breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
-    });
+  _onMessage(e) {
+    const d = e && e.data;
+    if (!d || typeof d !== 'object') return;
 
-    if (grand===0){
-      $('#quoteTotal').textContent = '$0.00';
-      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
-      updateSubmitState(); debouncedSendHeight();
-      return;
-    }
-    const best = bestDiscountPercent();
-    if (best>0) breakdown.push(`Discount (${best}%): -$${money(grand*(best/100))}`);
-    const total = Math.max(0, grand * (1 - best/100));
+    // Accept both new and legacy height messages
+    let h = null;
+    if (d.type === 'ODD_FORM_HEIGHT' && typeof d.height === 'number') h = d.height;
+    else if (typeof d.oddIntakeHeight === 'number') h = d.oddIntakeHeight;
+    if (h != null) this._setHeight(h);
 
-    $('#quoteTotal').textContent = `$${money(total)}`;
-    $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
-
-    updateSubmitState(); debouncedSendHeight();
-  }
-
-  function updateSubmitState(){
-    const form = document.getElementById('intakeForm');
-    const btn = document.getElementById('submitBtn');
-    if (btn && btn.dataset.loading==='1') return; // don't fight loading UI
-    const valid = form.checkValidity();
-    if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
-    else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
-  }
-
-  function addServiceCard(isPrimary=false){
-    const id = isPrimary ? 'primary' : uid();
-    const svc = createServiceState(id);
-    state.services.push(svc);
-    const card = buildServiceCard(svc);
-    document.getElementById('servicesContainer').appendChild(card);
-  }
-
-  document.addEventListener('DOMContentLoaded', ()=>{
-    // Build primary service card
-    addServiceCard(true);
-
-    // Height observers → Wix
-    try{
-      if (window.ResizeObserver){
-        const ro = new ResizeObserver(()=>debouncedSendHeight());
-        ro.observe(document.body);
-        const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
-        const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
-      }
-      window.addEventListener('load', ()=>sendHeight(true));
-      // pulse pings for 8s to cover late layout shifts
-      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
-      document.addEventListener('input', debouncedSendHeight);
-      document.addEventListener('change', debouncedSendHeight);
-      document.addEventListener('click', debouncedSendHeight);
-      window.addEventListener('resize', debouncedSendHeight);
-      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
-      setTimeout(()=>sendHeight(true), 0);
-    }catch(e){ /* noop */ }
-
-    // Discount listeners (self-identification only)
-    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
-
-    // Add another service
-    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
-
-    // Form validation hooks
-    const formEl = document.getElementById('intakeForm');
-    formEl.addEventListener('input', updateSubmitState);
-    formEl.addEventListener('change', updateSubmitState);
-
-    // Submit
-    document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      if (btn && btn.dataset.loading === '1') return; // guard against double clicks
-      if (!e.target.checkValidity()){ updateSubmitState(); return; }
-
-      // lock UI
-      if (btn){
-        btn.dataset.loading = '1';
-        btn.disabled = true;
-        btn.classList.add('btn-disabled','btn-loading');
-        btn.classList.remove('btn-primary');
-        btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
-      }
-
-      const primary = state.services[0] || {};
-      const meta = CONFIG.staticData.pricing.find(p=>p.subType===primary.subType) || {};
-      const unit = meta.priceUnit || 'flat';
-      const primaryDateTime = combineDateTime(primary.date, primary.time);
-      const primaryEndTime  = (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '';
-      const primaryVenue    = primary.location || '';
-      const primaryServiceType = primary.subType || '';
-      const needsAudioRecording = (isVideography(primary.subType) && !isVideoEditing(primary.subType))
-        ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : ''))
-        : '';
-
-      const payload = {
-        firstName: document.getElementById('firstNameInput').value,
-        lastName: document.getElementById('lastNameInput').value,
-        email: document.getElementById('emailInput').value.trim().toLowerCase(),
-        organizationName: document.getElementById('orgInput')?.value || '',
-        discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
-        discountAppliedPercent: bestDiscountPercent(),
-        mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
-        additionalInfo: document.getElementById('additionalInfo')?.value || '',
-        requestedProviders: document.getElementById('requestedProviders')?.value || '',
-        services: state.services,
-        quoteTotal: document.getElementById('quoteTotal').textContent,
-        quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-        primaryDateTime, primaryEndTime, primaryVenue, primaryServiceType, needsAudioRecording,
-        tosAccepted: !!document.getElementById('tosCheck')?.checked,
-        bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
-      };
-
-      try{
-        if (CONFIG.mode==='api'){
-          await fetch(`${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        } else {
-          console.log('Static mode submission:', payload);
+    // On submit success: snap height and keep nudging briefly to ensure host collapses
+    if (d.type === 'ODD_FORM_SUCCESS') {
+      if (typeof d.height === 'number') this._setHeight(d.height);
+      if (this._successNudge) clearInterval(this._successNudge);
+      const t0 = Date.now();
+      this._successNudge = setInterval(() => {
+        this._setHeight(this._currentHeight);
+        if (Date.now() - t0 > 2000) {
+          clearInterval(this._successNudge);
+          this._successNudge = null;
         }
-        // Show success screen and hide form/cards
-        const header = document.getElementById('pageHeader');
-        const idCard = document.getElementById('identityCard');
-        const formEl2 = document.getElementById('intakeForm');
-        if (header) header.style.display='none';
-        if (idCard) idCard.style.display='none';
-        if (formEl2) formEl2.style.display='none';
+      }, 150);
 
-        const success = document.getElementById('successScreen');
-        if (success){
-          const who = document.getElementById('firstNameInput')?.value || 'Thank you';
-          success.innerHTML = `
-            <h2 class="text-xl font-semibold mb-2">Thanks, ${esc(who)} — your request was sent!</h2>
-            <p class="text-sm text-gray-700 mb-4">We’ll follow up by email shortly.</p>
-            <div class="text-sm text-gray-600">Submitted: <span class="mono">${new Date().toLocaleString()}</span></div>
-            <div class="mt-4">
-              <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
-            </div>
-          `;
-          success.style.display='';
-        }
-        // Force a strong round of height pings so the Wix section shrinks to the
-        // confirmation card size even on slower embeds, and emit a SUCCESS signal.
-        __lastHeight = 0; // ensure we always emit at least one message after swap
-        const nowH = measureHeight();
-        postHeights(nowH);
-        if (window.parent) window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, '*');
-        sendHeight(true);
-        const _hInt = setInterval(()=>sendHeight(true), 200);
-        setTimeout(()=>clearInterval(_hInt), 2000);
-      }catch(err){
-        console.error(err);
-        alert('Sorry, something went wrong. Please try again.');
-      } finally {
-        if (btn){
-          btn.dataset.loading = '0';
-          btn.disabled = true; // remains disabled until valid again
-          btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading');
-          btn.textContent = 'Submit Request';
-        }
-        debouncedSendHeight();
-        updateSubmitState();
+      this.dispatchEvent(new CustomEvent('odd-intake:success', {
+        bubbles: true,
+        detail: { ts: d.ts || Date.now(), height: d.height }
+      }));
+
+      if (this.hasAttribute('scroll-into-view-on-success')) {
+        this.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    });
+    }
+  }
+}
 
-    updateSubmitState();
-  });
-  </script>
-</body>
-</html>
+if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
