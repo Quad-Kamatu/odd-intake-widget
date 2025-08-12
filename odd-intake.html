@@ -258,13 +258,21 @@
   }
   let __lastHeight = 0;
   function measureHeight(){
-    // Measure only the actual widget container so we can shrink below viewport height
+    // Prefer intrinsic content height of the main container
     const root = document.querySelector('.max-w-4xl');
     if (root){
-      const rect = root.getBoundingClientRect();
-      // rect.bottom is distance from viewport top to the bottom of content
-      return Math.ceil(rect.bottom + 8); // small pad
+      const h = Math.ceil((root.scrollHeight || root.offsetHeight || 0) + 8);
+      return h;
     }
+    // Robust fallback: document metrics
+    const b = document.body, d = document.documentElement;
+    return Math.ceil(Math.max(
+      b ? b.scrollHeight : 0,
+      d ? d.scrollHeight : 0,
+      b ? b.offsetHeight : 0,
+      d ? d.offsetHeight : 0
+    ));
+  }
     // Fallback
     const d = document.documentElement;
     return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
@@ -300,7 +308,7 @@
   function combineDateTime(dateStr, timeStr){
     if (!dateStr || !timeStr) return '';
     return `${dateStr} ${timeStr}:00`;
-  }  }
+  }
   function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
   function validateEventFields(svc, wrap){ try{ const dateEl=wrap.querySelector('.date'); const timeEl=wrap.querySelector('.time'); if (!dateEl || !timeEl) return true; dateEl.setCustomValidity(''); timeEl.setCustomValidity(''); if (dateEl.required){ if (dateEl.min !== todayStr()) dateEl.min = todayStr(); const dv=dateEl.value, tv=timeEl.value; if (dv && tv){ const dt=new Date(`${dv}T${tv}:00`); const now=new Date(); if (!(dt instanceof Date) || isNaN(dt.getTime()) || dt.getTime() <= now.getTime()){ const msg='Please choose a future date and time.'; dateEl.setCustomValidity(msg); timeEl.setCustomValidity(msg); return false; } } } return true; } catch(_) { return true; } } 
 
