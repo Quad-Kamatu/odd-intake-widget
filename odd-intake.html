@@ -246,7 +246,17 @@
   function postHeights(px){
     try{
       const ts = Date.now();
-      const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
+      const msgStd = { type:'ODD_FORM_HEIGHT', height: px, ts };
+      const msgLegacy = { oddIntakeHeight: px, ts };
+      if (window.parent){
+        const origins = (ALLOWED_PARENTS && ALLOWED_PARENTS.length) ? ALLOWED_PARENTS : ['*'];
+        origins.forEach(origin => {
+          try { window.parent.postMessage(msgStd, origin); } catch(_){/* noop */}
+          try { window.parent.postMessage(msgLegacy, origin); } catch(_){/* noop */}
+        });
+      }
+    }catch(_){ /* noop */ }
+  }
 
   let __lastHeight = 0;
   function measureHeight(){
