@@ -247,25 +247,7 @@
     try{
       const ts = Date.now();
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
-      const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){
-        const origins = Array.from(new Set([window.location.origin, ...(ALLOWED_PARENTS||[])]));
-        origins.forEach(origin=>{
-          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
-          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
-        });
-      }
-    }catch(_){/*noop*/}
-  };
-      const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
-          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
-        });
-      }
-    }catch(_){/*noop*/}
-  }
+
   let __lastHeight = 0;
   function measureHeight(){
     // Prefer intrinsic content height of the main container
