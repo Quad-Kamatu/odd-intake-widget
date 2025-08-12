@@ -298,6 +298,8 @@
   function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
   function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
+  function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+  function validateEventFields(svc, wrap){ try{ const dateEl=wrap.querySelector('.date'); const timeEl=wrap.querySelector('.time'); if (!dateEl || !timeEl) return true; dateEl.setCustomValidity(''); timeEl.setCustomValidity(''); if (dateEl.required){ if (dateEl.min !== todayStr()) dateEl.min = todayStr(); const dv=dateEl.value, tv=timeEl.value; if (dv && tv){ const dt=new Date(`${dv}T${tv}:00`); const now=new Date(); if (!(dt instanceof Date) || isNaN(dt.getTime()) || dt.getTime() <= now.getTime()){ const msg='Please choose a future date and time.'; dateEl.setCustomValidity(msg); timeEl.setCustomValidity(msg); return false; } } } return true; } catch(_) { return true; } } ${timeStr}:00`; }
 
   function bestDiscountPercent(){
     const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
@@ -474,9 +476,12 @@
       // Event basics
       wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
       wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.date').required = isEvent;
-      wrap.querySelector('.time').required = isEvent;
-      wrap.querySelector('.location').required = isEvent;
+      const dateEl = wrap.querySelector('.date');
+      const timeEl = wrap.querySelector('.time');
+      const locEl  = wrap.querySelector('.location');
+      if (dateEl){ dateEl.required = isEvent; if (isEvent) dateEl.min = todayStr(); dateEl.setCustomValidity(''); }
+      if (timeEl){ timeEl.required = isEvent; timeEl.setCustomValidity(''); }
+      if (locEl){  locEl.required  = isEvent; }
 
       // Quantities
       wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
@@ -574,8 +579,8 @@
     complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
 
     // Date/time/location
-    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); });
-    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); });
+    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; validateEventFields(svc, wrap); updateSubmitState(); updateQuote(); });
+    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; validateEventFields(svc, wrap); updateSubmitState(); updateQuote(); });
     wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); });
 
     // Audio
