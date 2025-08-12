@@ -292,6 +292,8 @@
   const money = (n) => (Number(n)||0).toFixed(2);
   const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
+  // Clamp helper
+  function clamp(n, min, max){ n = Number(n) || 0; if (min != null) n = Math.max(min, n); if (max != null) n = Math.min(max, n); return n; }
   function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
   function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
@@ -556,13 +558,16 @@
 
     const headshotsInput = wrap.querySelector('.headshots');
     if (headshotsInput){
-      headshotsInput.addEventListener('input', (e)=>{
-        let v = Math.round(Number(e.target.value)||1);
-        v = Math.max(1, Math.min(50, v));
-        e.target.value = v;
+      const clampHeadshots = (el) => {
+        let v = Math.round(Number(el.value)||1);
+        v = clamp(v, 1, 50);
+        el.value = v;
         svc.units = v;
         updateQuote();
-      });
+      };
+      ['input','change','blur'].forEach(evt => headshotsInput.addEventListener(evt, ()=>clampHeadshots(headshotsInput)));
+      // normalize once on init
+      clampHeadshots(headshotsInput);
     }
 
     const complexitySel = wrap.querySelector('.complexity');
@@ -652,6 +657,9 @@
     const breakdown = []; let grand = 0;
     state.services.forEach((svc, idx)=>{
       if (!svc.subType) return;
+      const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
+      const unit = meta?.priceUnit || 'flat';
+      if (unit === 'perHeadshot') { svc.units = clamp(Math.round(svc.units || 1), 1, 50); }
       const res = costForService(svc);
       grand += res.subtotal;
       breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
