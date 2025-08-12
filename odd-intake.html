@@ -275,15 +275,6 @@
     const d = document.documentElement;
     return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
   }
-    // Robust fallback: document metrics
-    const b = document.body, d = document.documentElement;
-    return Math.ceil(Math.max(
-      b ? b.scrollHeight : 0,
-      d ? d.scrollHeight : 0,
-      b ? b.offsetHeight : 0,
-      d ? d.offsetHeight : 0
-    ));
-  }
   function sendHeight(immediateFollowups, force=false){
     if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
     try{
