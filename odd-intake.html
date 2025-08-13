@@ -13,7 +13,6 @@
       --c4:#FFE176; /* saffron */
     }
 
-    /* Animatable custom angle for the gradient */
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
     html, body { height: 100%; margin:0; padding:0; background:transparent; }
@@ -32,7 +31,6 @@
 
     @keyframes bg-pan { 0%{background-position:0% 0%} 50%{background-position:100% 0%} 100%{background-position:0% 100%} }
     @keyframes bg-rotate { to { --ang: 360deg; } }
-
     @media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
 
     .card{ box-shadow:0 8px 20px rgba(0,0,0,.06); border-radius:16px; background:#fff; padding:24px; border:1px solid #eaeaea; }
@@ -55,16 +53,13 @@
     /* Film length slider styles */
     .filmSlider{ --val:0%; accent-color:#76F1FF; height:2rem; width:100%; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); border-radius:9999px; }
     .filmSlider:focus{ outline:none; }
-    /* WebKit */
     .filmSlider::-webkit-slider-runnable-track{ height:6px; border-radius:9999px; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); }
     .filmSlider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; margin-top:-6px; box-shadow:0 1px 2px rgba(0,0,0,.15); }
     .filmSlider:focus::-webkit-slider-thumb{ box-shadow:0 0 0 4px rgba(118,241,255,.25); }
-    /* Firefox */
     .filmSlider::-moz-range-track{ height:6px; border-radius:9999px; background:#dbeafe; }
     .filmSlider::-moz-range-progress{ height:6px; border-radius:9999px; background:#76F1FF; }
     .filmSlider::-moz-range-thumb{ width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; box-shadow:0 1px 2px rgba(0,0,0,.15); }
 
-    /* Consistent spacing for dynamic question groups inside each service card */
     .service-card .row,
     .service-card .eventRow,
     .service-card .locationRow,
@@ -77,7 +72,6 @@
     .service-card .complexityWrap .help{ margin-top:8px; }
     .service-card > :last-child{ margin-bottom:0 !important; }
 
-    /* Spinner */
     @keyframes spin{ to{ transform: rotate(360deg); } }
     .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
     .btn.btn-loading{ cursor:progress; }
@@ -131,10 +125,8 @@
 
     <!-- Services Form -->
     <form id="intakeForm" class="space-y-6" novalidate>
-      <!-- Services container (primary + extras) -->
       <div id="servicesContainer" class="space-y-6"></div>
 
-      <!-- Add another service -->
       <div class="card bg-white border border-gray-200">
         <div class="flex items-center justify-between">
           <div class="lbl">Additional Services</div>
@@ -142,7 +134,6 @@
         </div>
       </div>
 
-      <!-- Estimate Section -->
       <div class="card">
         <h3 class="font-semibold mb-2">Estimate</h3>
         <div class="grid md:grid-cols-3 gap-4 items-start">
@@ -157,7 +148,6 @@
         </div>
       </div>
 
-      <!-- Additional info + Agreements & Mailing List -->
       <div class="card bg-gray-50 border border-gray-200">
         <div class="space-y-4">
           <label class="block">
@@ -190,132 +180,95 @@
       </div>
     </form>
 
-  <div id="successScreen" class="card" style="display:none;">
-    <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
-    <p class="text-sm text-gray-700 mb-4">We’ll follow up by email shortly.</p>
-    <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
-    <div class="mt-4">
-      <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
+    <div id="successScreen" class="card" style="display:none;">
+      <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
+      <p class="text-sm text-gray-700 mb-4">We’ll follow up by email shortly.</p>
+      <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
+      <div class="mt-4">
+        <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
+      </div>
     </div>
-  </div>
   </div>
 
   <script>
-  // -------- CONFIG --------
+  // -------- CONFIG / CATALOG --------
   const CONFIG = {
     mode: 'api',
     api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit', catalogPath: '/catalog' },
-    catalog: { services: [], pricing: [], addons: [] }
+    catalog: null
   };
-  // -------- SECURITY --------
-  // Only postMessage to these parent origins (covers /playground and the live site)
   const ALLOWED_PARENTS = ['https://www.onedaydance.com'];
 
-  // -------- STATE --------
-  const state = { services: [] };
-  // -------- HELPERS --------
-  // Load catalog from CMS
-  async function loadCatalog(){
-    try{
-      const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const services = (data.services||[]).map(s=>{
-        const label = String(s.serviceKey||'').trim();
-        const key = label.toLowerCase();
-        return { serviceKey: key, serviceName: label };
-      });
-      const pricing = (data.pricing||[]).map(p=>({
-        ...p,
-        serviceKey: String(p.serviceKey||'').toLowerCase()
-      }));
-      CONFIG.catalog.services = services;
-      CONFIG.catalog.pricing  = pricing;
-      CONFIG.catalog.addons   = data.addons || [];
-    }catch(e){ console.error('loadCatalog failed', e); }
-  }
-
-  // -------- HELPERS --------
-  // iFrame auto-height → Wix page
+  // -------- HEIGHT MESSAGING --------
   function postHeights(px){
     try{
       const ts = Date.now();
-      const msgStd = { type:'ODD_FORM_HEIGHT', height: px, ts };
+      const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
       const msgLegacy = { oddIntakeHeight: px, ts };
       if (window.parent){
-        const origins = (ALLOWED_PARENTS && ALLOWED_PARENTS.length) ? ALLOWED_PARENTS : [];
-        // Send to allow‑listed origins first
-        origins.forEach(origin => {
-          try { window.parent.postMessage(msgStd, origin); } catch(_){/* noop */}
-          try { window.parent.postMessage(msgLegacy, origin); } catch(_){/* noop */}
+        (ALLOWED_PARENTS||[]).forEach(origin=>{
+          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
+          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
         });
-        // Fallback: also broadcast to '*' to handle Wix wrapper/preview origins
-        try { window.parent.postMessage(msgStd, '*'); } catch(_){/* noop */}
-        try { window.parent.postMessage(msgLegacy, '*'); } catch(_){/* noop */}
       }
-    }catch(_){ /* noop */ }
+    }catch(_){/*noop*/}
   }
-
   let __lastHeight = 0;
   function measureHeight(){
-    // Measure only the actual widget container so we can shrink below viewport height
     const root = document.querySelector('.max-w-4xl');
-    if (root){
-      const rect = root.getBoundingClientRect();
-      // rect.bottom is distance from viewport top to the bottom of content
-      return Math.ceil(rect.bottom + 8); // small pad to avoid off‑by‑one clipping
-    }
-    // Fallback (works in older Wix iframes)
-    const d = document.documentElement;
-    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
+    if (root){ const rect = root.getBoundingClientRect(); return Math.ceil(rect.bottom + 8); }
+    const d = document.documentElement; return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
   }
-  function sendHeight(immediateFollowups, force=false){
+  function sendHeight(immediateFollowups){
     if (typeof immediateFollowups === 'undefined') immediateFollowups = true;
     try{
       const raw = measureHeight();
       const px = Math.ceil(raw);
-      if (force || Math.abs(px - __lastHeight) > 1) {
-        __lastHeight = px;
-        postHeights(px);
-        if (immediateFollowups){
-          requestAnimationFrame(()=>sendHeight(false));
-          setTimeout(()=>sendHeight(false), 60);
-          setTimeout(()=>sendHeight(false), 180);
-        }
+      if (Math.abs(px - __lastHeight) > 1){
+        __lastHeight = px; postHeights(px);
+        if (immediateFollowups){ requestAnimationFrame(()=>sendHeight(false)); setTimeout(()=>sendHeight(false), 60); setTimeout(()=>sendHeight(false), 180); }
       }
     }catch(e){ /* noop */ }
   }
   function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
   const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
 
+  // -------- UTILS --------
   const $ = (sel) => document.querySelector(sel);
   const money = (n) => (Number(n)||0).toFixed(2);
   const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const uid = () => Math.random().toString(36).slice(2,9);
-  // Clamp helper
-  function clamp(n, min, max){ n = Number(n) || 0; if (min != null) n = Math.max(min, n); if (max != null) n = Math.min(max, n); return n; }
   function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
   function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
-  function combineDateTime(dateStr, timeStr){
-    if (!dateStr || !timeStr) return '';
-    return `${dateStr} ${timeStr}:00`;
-  }
-  function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
-  function validateEventFields(svc, wrap){ try{ const dateEl=wrap.querySelector('.date'); const timeEl=wrap.querySelector('.time'); if (!dateEl || !timeEl) return true; dateEl.setCustomValidity(''); timeEl.setCustomValidity(''); if (dateEl.required){ if (dateEl.min !== todayStr()) dateEl.min = todayStr(); const dv=dateEl.value, tv=timeEl.value; if (dv && tv){ const dt=new Date(`${dv}T${tv}:00`); const now=new Date(); if (!(dt instanceof Date) || isNaN(dt.getTime()) || dt.getTime() <= now.getTime()){ const msg='Please choose a future date and time.'; dateEl.setCustomValidity(msg); timeEl.setCustomValidity(msg); return false; } } } return true; } catch(_) { return true; } } 
+  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
 
-  function bestDiscountPercent(){
-    const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none';
-    return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0);
-  }
+  // -------- STATE --------
+  const state = { services: [] };
+
+  function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
   function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
 
-  function createServiceState(id){ return { id, serviceKey:'', subType:'', date:'', time:'', location:'', hours:1, units:1, complexity:'simple', addons:{ addCamQty:0, addCamHours:1, lighting:false }, audio:null }; }
-  function serviceEligibleForComplexity(subType){ return ['Video Editing','Dance Film Production'].includes(subType); }
-  function cameraEligible(subType){ return ['Event Videography','Dance Film Production','Rehearsal Videography','Event Photography','Rehearsal Photography'].includes(subType); }
-  function lightingEligible(subType){ return ['Dance Film Production','Rehearsal Videography'].includes(subType); }
-  function isVideography(subType){ return CONFIG.catalog.pricing.find(p=>p.subType===subType)?.serviceKey==='videography'; }
-  function isVideoEditing(subType){ return subType==='Video Editing'; }
+  function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
+  function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
+  function isVideoEditing(meta){ return (meta?.subType||'')==='Video Editing'; }
+
+  // -------- CATALOG LOADER --------
+  async function loadCatalog(){
+    const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
+    const res = await fetch(url, { headers:{ 'Content-Type':'application/json' } });
+    if (!res.ok) throw new Error('Failed to load catalog');
+    const data = await res.json();
+    // Normalize keys
+    const normalizeKey = (s) => String(s||'').trim();
+    const services = (data.services||[]).map(s=>({ serviceKey: normalizeKey(s.serviceKey), serviceName: s.name || s.serviceName || normalizeKey(s.serviceKey) }));
+    const pricing  = (data.pricing || []).map(p=>({ ...p, serviceKey: normalizeKey(p.serviceKey) }));
+    const addons   = (data.addons  || []).map(a=>({ ...a, appliesToCategories: (a.appliesToCategories||[]).map(normalizeKey) }));
+    CONFIG.catalog = { services, pricing, addons };
+  }
+
+  // -------- SERVICE CARD --------
+  function createServiceState(id){ return { id, offeringId:'', serviceKey:'', subType:'', date:'', time:'', location:'', hours:1, units:1, complexity:'simple', audio:null, addons: {}, addonHours: {} }; }
 
   function buildServiceCard(svc){
     const wrap = document.createElement('div');
@@ -371,18 +324,14 @@
       <div class="row headshotRow" style="display:none;">
         <label class="block">
           <span class="lbl">Number of Headshots *</span>
-          <input type="number" min="1" max="50" step="1" value="1" class="inp headshots" />
+          <input type="number" min="1" value="1" class="inp headshots" />
         </label>
       </div>
 
       <div class="row complexityWrap" style="display:none;">
         <label class="block">
           <span class="lbl">Editing Complexity *</span>
-          <select class="inp complexity">
-            <option value="simple">Simple</option>
-            <option value="moderate">Moderate</option>
-            <option value="complex">Complex</option>
-          </select>
+          <select class="inp complexity"></select>
         </label>
         <div class="card bg-gray-50 border border-gray-200 text-sm text-gray-700 help"></div>
       </div>
@@ -399,92 +348,143 @@
 
       <div class="card bg-gray-50 border border-gray-200 addonsWrap" style="display:none;">
         <div class="lbl mb-3">Add-ons</div>
-        <div class="grid md:grid-cols-2 gap-3 items-end">
-          <label class="block addCamWrap" style="display:none;">
-            <span class="lbl">Additional Cameras</span>
-            <select class="inp addCam">
-              <option value="0">None</option>
-              <option value="1">1 camera</option>
-              <option value="2">2 cameras</option>
-            </select>
-          </label>
-          <label class="block addCamHoursWrap" style="display:none;">
-            <span class="lbl">Estimated shoot hours (for per‑minute services)</span>
-            <input type="number" min="1" value="1" class="inp addCamHours" />
-          </label>
-          <label class="inline-flex items-center gap-3 lightingWrap" style="display:none;">
-            <input type="checkbox" class="lighting" />
-            <span>
-              <span class="font-medium">Lighting</span>
-              <span class="block text-sm text-gray-600">$100 flat</span>
-            </span>
-          </label>
-        </div>
+        <div class="addonsList grid gap-3"></div>
       </div>
     `;
 
-    // populate service types
     const typeSel = wrap.querySelector('.serviceType');
-    typeSel.innerHTML = CONFIG.catalog.services.map(s=>`<option value="${s.serviceKey}">${s.serviceName}</option>`).join('');
+    typeSel.innerHTML = (CONFIG.catalog.services||[]).map(s=>`<option value="${s.serviceKey}">${esc(s.serviceName)}</option>`).join('');
     const subSel = wrap.querySelector('.subType');
 
     function resetServiceUI(){
-      svc.hours = 1; svc.units = 1; svc.complexity = 'simple';
-      svc.addons = { addCamQty:0, addCamHours:1, lighting:false };
-      svc.audio = null;
-      const hoursEl = wrap.querySelector('.hours'); if (hoursEl){ hoursEl.value = 1; hoursEl.required = false; }
-      const unitsEl = wrap.querySelector('.units'); if (unitsEl){ unitsEl.value = 1; unitsEl.required = false; }
-      const headEl  = wrap.querySelector('.headshots'); if (headEl){ headEl.value = 1; headEl.required = false; }
-      const filmEl  = wrap.querySelector('.filmSlider'); if (filmEl) { filmEl.value = 1; updateSliderFill(filmEl); }
-      const compSel = wrap.querySelector('.complexity'); if (compSel){ compSel.value = 'simple'; compSel.required = false; }
-      const help    = wrap.querySelector('.help'); if (help) help.textContent = '';
+      svc.hours = 1; svc.units = 1; svc.complexity = 'simple'; svc.audio = null; svc.addons = {}; svc.addonHours = {};
+      ['.hours','.units','.headshots'].forEach(sel=>{ const el=wrap.querySelector(sel); if(el){ el.value=1; el.required=false; }});
+      const filmEl=wrap.querySelector('.filmSlider'); if(filmEl){ filmEl.value=1; updateSliderFill(filmEl); }
+      const help=wrap.querySelector('.help'); if(help) help.textContent='';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-      const camSel = wrap.querySelector('.addCam'); if (camSel) camSel.value = '0';
-      const camHours = wrap.querySelector('.addCamHours'); if (camHours) camHours.value = 1;
-      const camHoursWrap = wrap.querySelector('.addCamHoursWrap'); if (camHoursWrap) camHoursWrap.style.display = 'none';
-      const light = wrap.querySelector('.lighting'); if (light) light.checked = false;
-      const hide = sel => { const el = wrap.querySelector(sel); if (el) el.style.display = 'none'; };
-      hide('.addonsWrap'); hide('.addCamWrap'); hide('.lightingWrap'); hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
-      const dateEl = wrap.querySelector('.date'); if (dateEl) { dateEl.value=''; dateEl.required=false; }
-      const timeEl = wrap.querySelector('.time'); if (timeEl) { timeEl.value=''; timeEl.required=false; }
-      const locEl  = wrap.querySelector('.location'); if (locEl) { locEl.value=''; locEl.required=false; }
+      const hide = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
+      hide('.addonsWrap'); wrap.querySelector('.addonsList').innerHTML='';
+      hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
+      const dateEl=wrap.querySelector('.date'); if(dateEl){ dateEl.value=''; dateEl.required=false; }
+      const timeEl=wrap.querySelector('.time'); if(timeEl){ timeEl.value=''; timeEl.required=false; }
+      const locEl=wrap.querySelector('.location'); if(locEl){ locEl.value=''; locEl.required=false; }
       hide('.eventRow'); hide('.locationRow');
     }
 
     function refreshSubs(){
       const key = typeSel.value;
-      const subs = CONFIG.catalog.pricing.filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
-      subSel.disabled = false;
-      svc.serviceKey = key; svc.subType = '';
-      // Hide any previously shown fields when switching categories
-      resetServiceUI();
-      updateQuote();
-      updateSubmitState();
-      debouncedSendHeight();
+      const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
+      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
+      subSel.disabled = false; svc.serviceKey = key; svc.subType = ''; svc.offeringId='';
+      resetServiceUI(); updateQuote(); updateSubmitState(); debouncedSendHeight();
+    }
+
+    function renderComplexity(meta){
+      const compWrap = wrap.querySelector('.complexityWrap');
+      const compSel = wrap.querySelector('.complexity');
+      const help    = wrap.querySelector('.help');
+      if (serviceEligibleForComplexity(meta)){
+        compWrap.style.display='';
+        const opts = [];
+        if (meta.complexityBase?.simple   != null) opts.push('<option value="simple">Simple</option>');
+        if (meta.complexityBase?.moderate != null) opts.push('<option value="moderate">Moderate</option>');
+        if (meta.complexityBase?.complex  != null) opts.push('<option value="complex">Complex</option>');
+        compSel.innerHTML = opts.join('');
+        compSel.value = opts[0]?.match(/value="(.*?)"/)?.[1] || 'simple';
+        svc.complexity = compSel.value;
+        const text = meta.complexityTexts?.[svc.complexity] || '';
+        help.textContent = text;
+        compSel.onchange = ()=>{ svc.complexity = compSel.value; help.textContent = meta.complexityTexts?.[svc.complexity] || ''; updateQuote(); };
+      } else {
+        compWrap.style.display='none';
+        svc.complexity = 'simple';
+      }
+    }
+
+    function applicableAddons(meta){
+      const cat = (meta.serviceKey||'').toLowerCase();
+      const off = meta.offeringId;
+      return (CONFIG.catalog.addons||[]).filter(a=>{
+        const byCat = (a.appliesToCategories||[]).map(x=>String(x).toLowerCase()).includes(cat);
+        const byOff = (a.appliesToOfferings||[]).includes(off);
+        return byCat || byOff;
+      });
+    }
+
+    function renderAddons(meta){
+      const list = wrap.querySelector('.addonsList');
+      list.innerHTML='';
+      const adds = applicableAddons(meta);
+      if (!adds.length){ wrap.querySelector('.addonsWrap').style.display='none'; return; }
+      wrap.querySelector('.addonsWrap').style.display='';
+
+      adds.forEach(ad=>{
+        const row = document.createElement('div');
+        row.className = 'grid md:grid-cols-2 gap-3 items-end';
+        row.dataset.addonId = ad.id;
+
+        // Label + pricing hint
+        const label = document.createElement('div');
+        label.innerHTML = `
+          <div class="lbl">${esc(ad.label)}</div>
+          <div class="text-xs text-gray-600">Pricing: ${esc(ad.pricingMode)}${ad.rate?` @ $${money(ad.rate)}`:''}</div>
+        `;
+        row.appendChild(label);
+
+        // Control by selectionMode
+        let control;
+        const mode = (ad.selectionMode||'boolean').toLowerCase();
+        if (mode==='integer'){
+          control = document.createElement('label'); control.className='block';
+          const max = Number(ad.maxQty)||2; const opts = Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join('');
+          control.innerHTML = `<span class="lbl">Quantity</span><select class="inp addonQty">${opts}</select>`;
+        } else if (mode==='string'){
+          control = document.createElement('label'); control.className='block';
+          control.innerHTML = `<span class="lbl">Details</span><input type="text" class="inp addonText" placeholder="Enter details" />`;
+        } else {
+          control = document.createElement('label'); control.className='inline-flex items-center gap-2';
+          control.innerHTML = `<input type="checkbox" class="addonBool" /><span>Include</span>`;
+        }
+        row.appendChild(control);
+
+        // For per-minute services that need hours estimate
+        if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute){
+          const hoursWrap = document.createElement('label'); hoursWrap.className='block';
+          hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
+          row.appendChild(hoursWrap);
+        }
+
+        list.appendChild(row);
+
+        // Bind change handlers → update svc.addons / svc.addonHours
+        row.addEventListener('input', ()=>{
+          const qtySel = row.querySelector('.addonQty');
+          const txt    = row.querySelector('.addonText');
+          const chk    = row.querySelector('.addonBool');
+          const hrs    = row.querySelector('.addonHours');
+          if (qtySel) svc.addons[ad.id] = Number(qtySel.value||0);
+          else if (txt) svc.addons[ad.id] = txt.value || '';
+          else if (chk) svc.addons[ad.id] = chk.checked ? 1 : 0;
+          if (hrs) svc.addonHours[ad.id] = Math.max(1, Number(hrs.value)||1);
+          updateQuote();
+        });
+      });
     }
 
     function toggleForSub(){
-      const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
-      if (!meta){
-        // No concrete service selected → ensure all dynamic rows are hidden
-        resetServiceUI();
-        updateSubmitState();
-        debouncedSendHeight();
-        return;
-      }
+      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
+      if (!meta){ resetServiceUI(); updateSubmitState(); debouncedSendHeight(); return; }
+
+      // Basic flags
       const unit = meta.priceUnit || 'flat';
-      const isEvent = ['photography','videography'].includes(meta.serviceKey);
+      const isEvent = !!meta.isEvent || ['photography','videography'].includes((meta.serviceKey||'').toLowerCase());
 
       // Event basics
       wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
       wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
-      const dateEl = wrap.querySelector('.date');
-      const timeEl = wrap.querySelector('.time');
-      const locEl  = wrap.querySelector('.location');
-      if (dateEl){ dateEl.required = isEvent; if (isEvent) dateEl.min = todayStr(); dateEl.setCustomValidity(''); }
-      if (timeEl){ timeEl.required = isEvent; timeEl.setCustomValidity(''); }
-      if (locEl){  locEl.required  = isEvent; }
+      wrap.querySelector('.date').required = isEvent;
+      wrap.querySelector('.time').required = isEvent;
+      wrap.querySelector('.location').required = isEvent;
 
       // Quantities
       wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
@@ -495,204 +495,147 @@
       const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
       const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
 
-      if (unit==='perHeadshot'){
-        const h = wrap.querySelector('.headshots');
-        if (h){
-          h.max = 50;
-          let v = Math.round(Number(h.value)||1);
-          v = Math.max(1, Math.min(50, v));
-          h.value = v;
-          svc.units = v;
-        }
-      }
+      if (unit==='perHeadshot'){ const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); } }
 
-      // Complexity (only for Video Editing & Dance Film Production when perMinute)
-      const showComplexity = serviceEligibleForComplexity(svc.subType) && unit==='perMinute';
-      wrap.querySelector('.complexityWrap').style.display = showComplexity ? '' : 'none';
-      wrap.querySelector('.complexity').required = showComplexity;
-      const help = wrap.querySelector('.help');
-      help.textContent = showComplexity ? ({
-        simple:'Simple: sequencing, color correction, sound leveling. No heavy compositing.',
-        moderate:'Moderate: basic AE (masking, tracked graphics), layered edits, light VFX.',
-        complex:'Complex: advanced compositing, 3D, heavy VFX, or generative AI.'
-      }[wrap.querySelector('.complexity').value] || '') : '';
+      // Complexity
+      renderComplexity(meta);
 
-      // Audio (all videography except Video Editing)
-      const showAudio = isVideography(svc.subType) && !isVideoEditing(svc.subType);
+      // Audio
+      const showAudio = isVideography(meta) && !isVideoEditing(meta);
       wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
 
-      // Add-ons
-      const camOK = cameraEligible(svc.subType);
-      const lightOK = lightingEligible(svc.subType);
-      wrap.querySelector('.addonsWrap').style.display = (camOK || lightOK) ? '' : 'none';
-      wrap.querySelector('.addCamWrap').style.display = camOK ? '' : 'none';
-      wrap.querySelector('.lightingWrap').style.display = lightOK ? '' : 'none';
-      const camQty = Number(wrap.querySelector('.addCam').value || 0);
-      wrap.querySelector('.addCamHoursWrap').style.display = (camQty>0 && unit!=='perHour') ? '' : 'none';
+      // Add-ons (dynamic from CMS)
+      renderAddons({ ...meta, offeringId: svc.offeringId });
 
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
-      validateEventFields(svc, wrap);
-      updateSubmitState();
-      debouncedSendHeight();
+      updateSubmitState(); debouncedSendHeight();
     }
 
-    // Type & Sub-type listeners
-    typeSel.addEventListener('change', () => { resetServiceUI(); refreshSubs(); updateQuote(); });
-    subSel.addEventListener('change', () => { svc.subType = subSel.value; toggleForSub(); updateQuote(); });
+    // Listeners
+    typeSel.addEventListener('change', () => { refreshSubs(); });
+    subSel.addEventListener('change', () => {
+      const offId = subSel.value;
+      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===offId);
+      svc.offeringId = offId; svc.serviceKey = meta?.serviceKey||''; svc.subType = meta?.subType||'';
+      toggleForSub(); updateQuote();
+    });
     refreshSubs();
 
-    // Quantity & length controls
+    // Qty & length
     wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
-
     const filmSlider = wrap.querySelector('.filmSlider');
     const unitsInput = wrap.querySelector('.units');
-    if (filmSlider){
-      updateSliderFill(filmSlider);
-      filmSlider.addEventListener('input',(e)=>{
-        svc.units = Number(e.target.value)||1;
-        if (unitsInput) unitsInput.value = svc.units;
-        updateSliderFill(filmSlider);
-        updateQuote();
-      });
-    }
-    if (unitsInput){
-      unitsInput.addEventListener('input',(e)=>{
-        svc.units = Number(e.target.value)||1;
-        if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); }
-        updateQuote();
-      });
-    }
-
+    if (filmSlider){ updateSliderFill(filmSlider); filmSlider.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (unitsInput) unitsInput.value = svc.units; updateSliderFill(filmSlider); updateQuote(); }); }
+    if (unitsInput){ unitsInput.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); } updateQuote(); }); }
     const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){
-      const clampHeadshots = (el) => {
-        let v = Math.round(Number(el.value)||1);
-        v = clamp(v, 1, 50);
-        el.value = v;
-        svc.units = v;
-        updateQuote();
-      };
-      ['input','change','blur'].forEach(evt => headshotsInput.addEventListener(evt, ()=>clampHeadshots(headshotsInput)));
-      // normalize once on init
-      clampHeadshots(headshotsInput);
-    }
-
-    const complexitySel = wrap.querySelector('.complexity');
-    complexitySel.addEventListener('change', ()=>{ svc.complexity = complexitySel.value; toggleForSub(); updateQuote(); });
+    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
 
     // Date/time/location
-    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; validateEventFields(svc, wrap); updateSubmitState(); updateQuote(); });
-    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; validateEventFields(svc, wrap); updateSubmitState(); updateQuote(); });
+    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); });
+    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); });
     wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); });
 
-    // Audio
+    // Audio choice
     wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); }));
-
-    // Add-ons
-    const addCamSel = wrap.querySelector('.addCam');
-    const addCamHours = wrap.querySelector('.addCamHours');
-    addCamSel.addEventListener('change', (e)=>{
-      svc.addons.addCamQty = Number(e.target.value||0);
-      const unit = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType)?.priceUnit || 'flat';
-      wrap.querySelector('.addCamHoursWrap').style.display = (svc.addons.addCamQty>0 && unit!=='perHour') ? '' : 'none';
-      updateQuote();
-    });
-    addCamHours.addEventListener('input', (e)=>{ svc.addons.addCamHours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
-    wrap.querySelector('.lighting').addEventListener('change', (e)=>{ svc.addons.lighting = !!e.target.checked; updateQuote(); });
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){
-      removeBtn.addEventListener('click', ()=>{
-        state.services = state.services.filter(x=>x.id!==svc.id);
-        wrap.remove();
-        updateQuote(); updateSubmitState(); updateDiscountBadge(); debouncedSendHeight();
-      });
-    }
+    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); updateDiscountBadge(); debouncedSendHeight(); }); }
 
     return wrap;
   }
 
-  function calcAddons(unit, addons, hours){
-    let total = 0; const lines = [];
-    const camQty = Math.min(2, Math.max(0, Number(addons.addCamQty)||0));
-    if (camQty>0){
-      const hrs = unit==='perHour' ? (Number(hours)||1) : (Number(addons.addCamHours)||1);
-      const camCost = 40 * camQty * hrs;
-      lines.push(`Additional Camera ×${camQty} @ $40/hr for ${hrs} hr: $${money(camCost)}`);
-      total += camCost;
-    }
-    if (addons.lighting){ lines.push(`Lighting: $${money(100)}`); total += 100; }
+  // -------- PRICING --------
+  function addonCostForService(meta, svc){
+    const adds = (CONFIG.catalog.addons||[]).filter(a=>{
+      const byCat = (a.appliesToCategories||[]).map(x=>String(x).toLowerCase()).includes((meta.serviceKey||'').toLowerCase());
+      const byOff = (a.appliesToOfferings||[]).includes(meta.offeringId);
+      return byCat || byOff;
+    });
+    let total=0; const lines=[];
+    adds.forEach(ad=>{
+      const val = svc.addons[ad.id];
+      const hasVal = (ad.selectionMode==='boolean') ? !!val : (ad.selectionMode==='integer' ? (Number(val)||0) > 0 : !!val);
+      if (!hasVal) return;
+      let qty = 1;
+      if (ad.selectionMode==='integer') qty = Math.min(Math.max(0, Number(val)||0), Number(ad.maxQty)||99);
+      if (ad.selectionMode==='string') qty = 0; // informational only
+
+      let cost = 0; let desc = ad.label;
+      const mode = (ad.pricingMode||'flat');
+      if (mode==='flat'){ cost = (ad.rate||0) * qty; }
+      else if (mode==='perHour'){
+        const hrs = meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1);
+        cost = (ad.rate||0) * qty * hrs; desc += ` ×${qty} @ $${money(ad.rate)}/hr for ${hrs} hr`;
+      }
+      else if (mode==='perMinute'){
+        const mins = (meta.priceUnit==='perMinute') ? (Number(svc.units)||1) : (Number(svc.units)||1); // default to film minutes
+        cost = (ad.rate||0) * qty * mins; desc += ` ×${qty} @ $${money(ad.rate)}/min for ${mins} min`;
+      }
+      if (mode==='flat' && qty>1) desc += ` ×${qty}`;
+      if (cost>0) { lines.push(`${desc}: $${money(cost)}`); total += cost; }
+    });
     return { total, lines };
   }
 
-  function costForService(svc){
-    const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
-    if (!meta) return { subtotal:0, lines:[] };
+  function baseCostForService(meta, svc){
     const unit = meta.priceUnit || 'flat';
     let baseRate = Number(meta.basePrice)||0;
-    if (unit==='perMinute' && meta.complexityBase && serviceEligibleForComplexity(svc.subType)){
+    if (unit==='perMinute' && meta.complexityBase && serviceEligibleForComplexity(meta)){
       baseRate = Number(meta.complexityBase[svc.complexity]||baseRate)||0;
     }
-
     const qty = unit==='perHour' ? (Number(svc.hours)||1)
               : unit==='perMinute' ? (Number(svc.units)||1)
               : unit==='perHeadshot' ? (Number(svc.units)||1)
               : 1;
-
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
     lines.push(`Base (${esc(meta.subType)} — ${esc(unit)}): $${money(base)}${meta.startingAt?'+':''}`);
 
-    // Setup fee for videography hourly
+    // Setup time (hours -> charge base hourly rate * setupTime)
     let setupFee = 0;
-    if (meta.serviceKey==='videography' && unit==='perHour'){
-      setupFee = (Number(meta.basePrice)||0) * 0.5;
-      if (setupFee>0) lines.push(`Setup & breakdown (0.5 hr): $${money(setupFee)}`);
+    if (isVideography(meta) && unit==='perHour' && Number(meta.setupTime)>0){
+      setupFee = (Number(meta.basePrice)||0) * Number(meta.setupTime);
+      if (setupFee>0) lines.push(`Setup & breakdown (${money(meta.setupTime)} hr): $${money(setupFee)}`);
     }
 
     if (meta.studioRequired) lines.push('Studio rental (billed separately)');
 
-    const addons = calcAddons(unit, svc.addons||{}, svc.hours);
-    addons.lines.forEach(l=>lines.push(l));
-    let subtotal = base + setupFee + addons.total;
+    return { base, setupFee, lines };
+  }
 
+  function costForService(svc){
+    const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
+    if (!meta) return { subtotal:0, lines:[] };
+
+    const base = baseCostForService(meta, svc);
+    const addons = addonCostForService({ ...meta, offeringId: svc.offeringId }, svc);
+
+    const subtotal = base.base + base.setupFee + addons.total;
+    const lines = [...base.lines, ...addons.lines];
     return { subtotal, lines };
   }
 
   function updateQuote(){
     const breakdown = []; let grand = 0;
     state.services.forEach((svc, idx)=>{
-      if (!svc.subType) return;
-      const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
-      const unit = meta?.priceUnit || 'flat';
-      if (unit === 'perHeadshot') { svc.units = clamp(Math.round(svc.units || 1), 1, 50); }
+      if (!svc.offeringId) return;
       const res = costForService(svc);
-      grand += res.subtotal;
-      breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
+      grand += res.subtotal; breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
     });
 
-    if (grand===0){
-      $('#quoteTotal').textContent = '$0.00';
-      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
-      updateSubmitState(); debouncedSendHeight();
-      return;
-    }
-    const best = bestDiscountPercent();
-    if (best>0) breakdown.push(`Discount (${best}%): -$${money(grand*(best/100))}`);
+    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; updateSubmitState(); debouncedSendHeight(); return; }
+    const best = bestDiscountPercent(); if (best>0) breakdown.push(`Discount (${best}%): -$${money(grand*(best/100))}`);
     const total = Math.max(0, grand * (1 - best/100));
-
-    $('#quoteTotal').textContent = `$${money(total)}`;
-    $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
-
+    $('#quoteTotal').textContent = `$${money(total)}`; $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
     updateSubmitState(); debouncedSendHeight();
   }
 
   function updateSubmitState(){
     const form = document.getElementById('intakeForm');
     const btn = document.getElementById('submitBtn');
-    if (btn && btn.dataset.loading==='1') return; // don't fight loading UI
+    if (btn && btn.dataset.loading==='1') return;
     const valid = form.checkValidity();
     if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
     else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
@@ -706,14 +649,13 @@
     document.getElementById('servicesContainer').appendChild(card);
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    // Build after loading catalog from CMS
-    loadCatalog().then(()=>{
-      addServiceCard(true);
-      updateQuote();
-      updateSubmitState();
-      debouncedSendHeight();
-    });
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    try{
+      await loadCatalog();
+    }catch(err){ console.error('Catalog load failed', err); alert('Could not load services. Please refresh.'); return; }
+
+    // Build primary service card
+    addServiceCard(true);
 
     // Height observers → Wix
     try{
@@ -724,17 +666,16 @@
         const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
       }
       window.addEventListener('load', ()=>sendHeight(true));
-      // pulse pings for 8s to cover late layout shifts
       (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
       try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
-      setTimeout(()=>sendHeight(true, true), 0);
+      setTimeout(()=>sendHeight(true), 0);
     }catch(e){ /* noop */ }
 
-    // Discount listeners (self-identification only)
+    // Discount listeners
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
 
     // Add another service
@@ -749,29 +690,12 @@
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
-      if (btn && btn.dataset.loading === '1') return; // guard against double clicks
+      if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
-      // lock UI
-      if (btn){
-        btn.dataset.loading = '1';
-        btn.disabled = true;
-        btn.classList.add('btn-disabled','btn-loading');
-        btn.classList.remove('btn-primary');
-        btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
-      }
+      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
 
-      const primary = state.services[0] || {};
-      const meta = CONFIG.catalog.pricing.find(p=>p.subType===primary.subType) || {};
-      const unit = meta.priceUnit || 'flat';
-      const primaryDateTime = combineDateTime(primary.date, primary.time);
-      const primaryEndTime  = (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '';
-      const primaryVenue    = primary.location || '';
-      const primaryServiceType = primary.subType || '';
-      const needsAudioRecording = (isVideography(primary.subType) && !isVideoEditing(primary.subType))
-        ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : ''))
-        : '';
-
+      const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -785,22 +709,21 @@
         services: state.services,
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-        primaryDateTime, primaryEndTime, primaryVenue, primaryServiceType, needsAudioRecording,
+        primaryDateTime: combineDateTime(primary.date, primary.time),
+        primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
+        primaryVenue: primary.location || '',
+        primaryServiceType: meta.subType || '',
+        needsAudioRecording: (isVideography(meta) && !isVideoEditing(meta)) ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : '')) : '',
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
 
       try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const ok = res.ok;
-        if (!ok) console.warn('Submit response not OK:', res.status);
+        const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 
-        // swap to success screen
+        document.getElementById('intakeForm').style.display = 'none';
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
@@ -808,42 +731,13 @@
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
         }
-        // Hard-remove pre-success blocks to avoid host CSS re-showing them
-        ['intakeForm','identityCard','pageHeader'].forEach(id=>{
-          const el = document.getElementById(id);
-          if (el) { try { el.remove(); } catch(_) { el.style.display='none'; } }
-        });
-        // ensure an immediate height push after DOM swap
-        sendHeight(true, true)
-        // Fire success messages and strong height pings
         const nowH = measureHeight();
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/}
-        });
-        postHeights(nowH);
-        const _int = setInterval(()=>postHeights(measureHeight()), 200);
-        setTimeout(()=>clearInterval(_int), 2000);
-      }catch(err){
-        console.error(err);
-        let warn = document.getElementById('submitError');
-        const host = document.getElementById('intakeForm') || document.body;
-        if (!warn) {
-          warn = document.createElement('div');
-          warn.id = 'submitError';
-          warn.className = 'text-sm text-red-600 mb-2';
-          host.insertBefore(warn, host.firstChild);
-        }
-        warn.textContent = 'We received your request, but there was an issue confirming it. If you do not get a confirmation email within a few minutes, please reach out.';
-      } finally {
-        if (btn){
-          btn.dataset.loading = '0';
-          btn.disabled = true; // will re-enable when valid again
-          btn.classList.add('btn-disabled');
-          btn.classList.remove('btn-primary','btn-loading');
-          btn.textContent = 'Submit Request';
-        }
-        updateSubmitState();
-        postHeights(measureHeight());
+        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
+        postHeights(nowH); const _int = setInterval(()=>postHeights(measureHeight()), 200); setTimeout(()=>clearInterval(_int), 2000);
+      }catch(err){ console.error(err); alert('Sorry, something went wrong sending your request. Please try again.'); }
+      finally{
+        if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
+        updateSubmitState(); postHeights(measureHeight());
       }
     });
 
