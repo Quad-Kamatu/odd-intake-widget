@@ -423,7 +423,6 @@
         row.className = 'grid md:grid-cols-2 gap-3 items-end';
         row.dataset.addonId = ad.id;
 
-        // Label + pricing hint
         const label = document.createElement('div');
         label.innerHTML = `
           <div class="lbl">${esc(ad.label)}</div>
@@ -431,7 +430,6 @@
         `;
         row.appendChild(label);
 
-        // Control by selectionMode
         let control;
         const mode = (ad.selectionMode||'boolean').toLowerCase();
         if (mode==='integer'){
@@ -439,6 +437,38 @@
           const max = Number(ad.maxQty)||2; const opts = Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join('');
           control.innerHTML = `<span class="lbl">Quantity</span><select class="inp addonQty">${opts}</select>`;
         } else if (mode==='string'){
+          control = document.createElement('label'); control.className='block';
+          control.innerHTML = `<span class="lbl">Details</span><input type="text" class="inp addonText" placeholder="Enter details" />`;
+        } else {
+          control = document.createElement('label'); control.className='inline-flex items-center gap-2';
+          control.innerHTML = `<input type="checkbox" class="addonBool" /><span>Include</span>`;
+        }
+        row.appendChild(control);
+
+        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
+        if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
+          const hoursWrap = document.createElement('label'); hoursWrap.className='block';
+          hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
+          row.appendChild(hoursWrap);
+        }
+
+        list.appendChild(row);
+
+        const updateVals = ()=>{
+          const qtySel = row.querySelector('.addonQty');
+          const txt    = row.querySelector('.addonText');
+          const chk    = row.querySelector('.addonBool');
+          const hrs    = row.querySelector('.addonHours');
+          if (qtySel) svc.addons[ad.id] = Number(qtySel.value||0);
+          else if (txt) svc.addons[ad.id] = txt.value || '';
+          else if (chk) svc.addons[ad.id] = chk.checked ? 1 : 0;
+          if (hrs) svc.addonHours[ad.id] = Math.max(1, Number(hrs.value)||1);
+          updateQuote();
+        };
+        row.addEventListener('input', updateVals);
+        row.addEventListener('change', updateVals);
+      });
+    } else if (mode==='string'){
           control = document.createElement('label'); control.className='block';
           control.innerHTML = `<span class="lbl">Details</span><input type="text" class="inp addonText" placeholder="Enter details" />`;
         } else {
@@ -564,16 +594,17 @@
 
       let cost = 0; let desc = ad.label;
       const mode = (ad.pricingMode||'flat');
-      if (mode==='flat'){ cost = (ad.rate||0) * qty; }
+      if (mode==='flat'){ cost = (ad.rate||0) * qty; if(qty>1) desc += ` ×${qty}`; }
       else if (mode==='perHour'){
-        const hrs = meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1);
+        // For Additional Camera, always inherit the service hours
+        const inherit = String(ad.label||'').toLowerCase()==='additional camera';
+        const hrs = inherit ? (Number(svc.hours)||1) : (meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1));
         cost = (ad.rate||0) * qty * hrs; desc += ` ×${qty} @ $${money(ad.rate)}/hr for ${hrs} hr`;
       }
       else if (mode==='perMinute'){
-        const mins = (meta.priceUnit==='perMinute') ? (Number(svc.units)||1) : (Number(svc.units)||1); // default to film minutes
+        const mins = (Number(svc.units)||1);
         cost = (ad.rate||0) * qty * mins; desc += ` ×${qty} @ $${money(ad.rate)}/min for ${mins} min`;
       }
-      if (mode==='flat' && qty>1) desc += ` ×${qty}`;
       if (cost>0) { lines.push(`${desc}: $${money(cost)}`); total += cost; }
     });
     return { total, lines };
@@ -582,8 +613,9 @@
   function baseCostForService(meta, svc){
     const unit = meta.priceUnit || 'flat';
     let baseRate = Number(meta.basePrice)||0;
-    if (unit==='perMinute' && meta.complexityBase && serviceEligibleForComplexity(meta)){
-      baseRate = Number(meta.complexityBase[svc.complexity]||baseRate)||0;
+    // Apply complexity rate whenever provided (not just per-minute)
+    if (meta.complexityBase && serviceEligibleForComplexity(meta)){
+      baseRate = Number(meta.complexityBase[svc.complexity] ?? baseRate) || 0;
     }
     const qty = unit==='perHour' ? (Number(svc.hours)||1)
               : unit==='perMinute' ? (Number(svc.units)||1)
