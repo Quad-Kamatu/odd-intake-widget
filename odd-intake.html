@@ -204,35 +204,8 @@
   // -------- CONFIG --------
   const CONFIG = {
     mode: 'api',
-    api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit' },
-    staticData: {
-      services: [
-        { serviceKey: 'videography', serviceName: 'Videography' },
-        { serviceKey: 'photography', serviceName: 'Photography' },
-        { serviceKey: 'design', serviceName: 'Design' }
-      ],
-      pricing: [
-        // VIDEOGRAPHY
-        { serviceKey: 'videography', subType: 'Dance Reel Express', basePrice: 300, priceUnit: 'flat' },
-        { serviceKey: 'videography', subType: 'Event Videography', basePrice: 70, priceUnit: 'perHour' },
-        { serviceKey: 'videography', subType: 'Dance Film Production', basePrice: 100, priceUnit: 'perMinute', complexityBase: { simple:100, moderate:200, complex:300 } },
-        { serviceKey: 'videography', subType: 'Rehearsal Videography', basePrice: 50, priceUnit: 'perHour' },
-        { serviceKey: 'videography', subType: 'Audition Reel', basePrice: 120, priceUnit: 'flat' },
-        { serviceKey: 'videography', subType: 'Video Editing', basePrice: 75, priceUnit: 'perMinute', complexityBase: { simple:75, moderate:150, complex:250 } },
-        // PHOTOGRAPHY
-        { serviceKey: 'photography', subType: 'Event Photography', basePrice: 90, priceUnit: 'perHour' },
-        { serviceKey: 'photography', subType: 'Complete Headshot Package', basePrice: 350, priceUnit: 'flat', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Headshots à la carte (Edited)', basePrice: 40, priceUnit: 'perHeadshot', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Headshots à la carte (Simple Edit)', basePrice: 20, priceUnit: 'perHeadshot', studioRequired: true },
-        { serviceKey: 'photography', subType: 'Rehearsal Photography', basePrice: 50, priceUnit: 'perHour' },
-        { serviceKey: 'photography', subType: 'Studio Photography', basePrice: 90, priceUnit: 'perHour', studioRequired: true },
-        // DESIGN
-        { serviceKey: 'design', subType: 'Logo Design', basePrice: 500, priceUnit: 'flat', startingAt: true },
-        { serviceKey: 'design', subType: 'Flyer or Postcard', basePrice: 100, priceUnit: 'flat', startingAt: true },
-        { serviceKey: 'design', subType: 'Business Card', basePrice: 100, priceUnit: 'flat' },
-        { serviceKey: 'design', subType: 'Web Design', basePrice: 500, priceUnit: 'flat', startingAt: true }
-      ]
-    }
+    api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit', catalogPath: '/catalog' },
+    catalog: { services: [], pricing: [], addons: [] }
   };
   // -------- SECURITY --------
   // Only postMessage to these parent origins (covers /playground and the live site)
@@ -240,6 +213,27 @@
 
   // -------- STATE --------
   const state = { services: [] };
+  // -------- HELPERS --------
+  // Load catalog from CMS
+  async function loadCatalog(){
+    try{
+      const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const services = (data.services||[]).map(s=>{
+        const label = String(s.serviceKey||'').trim();
+        const key = label.toLowerCase();
+        return { serviceKey: key, serviceName: label };
+      });
+      const pricing = (data.pricing||[]).map(p=>({
+        ...p,
+        serviceKey: String(p.serviceKey||'').toLowerCase()
+      }));
+      CONFIG.catalog.services = services;
+      CONFIG.catalog.pricing  = pricing;
+      CONFIG.catalog.addons   = data.addons || [];
+    }catch(e){ console.error('loadCatalog failed', e); }
+  }
 
   // -------- HELPERS --------
   // iFrame auto-height → Wix page
@@ -320,7 +314,7 @@
   function serviceEligibleForComplexity(subType){ return ['Video Editing','Dance Film Production'].includes(subType); }
   function cameraEligible(subType){ return ['Event Videography','Dance Film Production','Rehearsal Videography','Event Photography','Rehearsal Photography'].includes(subType); }
   function lightingEligible(subType){ return ['Dance Film Production','Rehearsal Videography'].includes(subType); }
-  function isVideography(subType){ return CONFIG.staticData.pricing.find(p=>p.subType===subType)?.serviceKey==='videography'; }
+  function isVideography(subType){ return CONFIG.catalog.pricing.find(p=>p.subType===subType)?.serviceKey==='videography'; }
   function isVideoEditing(subType){ return subType==='Video Editing'; }
 
   function buildServiceCard(svc){
@@ -431,7 +425,7 @@
 
     // populate service types
     const typeSel = wrap.querySelector('.serviceType');
-    typeSel.innerHTML = CONFIG.staticData.services.map(s=>`<option value="${s.serviceKey}">${s.serviceName}</option>`).join('');
+    typeSel.innerHTML = CONFIG.catalog.services.map(s=>`<option value="${s.serviceKey}">${s.serviceName}</option>`).join('');
     const subSel = wrap.querySelector('.subType');
 
     function resetServiceUI(){
@@ -459,7 +453,7 @@
 
     function refreshSubs(){
       const key = typeSel.value;
-      const subs = CONFIG.staticData.pricing.filter(p=>p.serviceKey===key);
+      const subs = CONFIG.catalog.pricing.filter(p=>p.serviceKey===key);
       subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.subType}">${esc(s.subType)}</option>`).join('');
       subSel.disabled = false;
       svc.serviceKey = key; svc.subType = '';
@@ -471,7 +465,7 @@
     }
 
     function toggleForSub(){
-      const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
+      const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
       if (!meta){
         // No concrete service selected → ensure all dynamic rows are hidden
         resetServiceUI();
@@ -600,7 +594,7 @@
     const addCamHours = wrap.querySelector('.addCamHours');
     addCamSel.addEventListener('change', (e)=>{
       svc.addons.addCamQty = Number(e.target.value||0);
-      const unit = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType)?.priceUnit || 'flat';
+      const unit = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType)?.priceUnit || 'flat';
       wrap.querySelector('.addCamHoursWrap').style.display = (svc.addons.addCamQty>0 && unit!=='perHour') ? '' : 'none';
       updateQuote();
     });
@@ -634,7 +628,7 @@
   }
 
   function costForService(svc){
-    const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
+    const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
     if (!meta) return { subtotal:0, lines:[] };
     const unit = meta.priceUnit || 'flat';
     let baseRate = Number(meta.basePrice)||0;
@@ -671,7 +665,7 @@
     const breakdown = []; let grand = 0;
     state.services.forEach((svc, idx)=>{
       if (!svc.subType) return;
-      const meta = CONFIG.staticData.pricing.find(p=>p.subType===svc.subType);
+      const meta = CONFIG.catalog.pricing.find(p=>p.subType===svc.subType);
       const unit = meta?.priceUnit || 'flat';
       if (unit === 'perHeadshot') { svc.units = clamp(Math.round(svc.units || 1), 1, 50); }
       const res = costForService(svc);
@@ -713,8 +707,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', ()=>{
-    // Build primary service card
-    addServiceCard(true);
+    // Build after loading catalog from CMS
+    loadCatalog().then(()=>{
+      addServiceCard(true);
+      updateQuote();
+      updateSubmitState();
+      debouncedSendHeight();
+    });
 
     // Height observers → Wix
     try{
@@ -763,7 +762,7 @@
       }
 
       const primary = state.services[0] || {};
-      const meta = CONFIG.staticData.pricing.find(p=>p.subType===primary.subType) || {};
+      const meta = CONFIG.catalog.pricing.find(p=>p.subType===primary.subType) || {};
       const unit = meta.priceUnit || 'flat';
       const primaryDateTime = combineDateTime(primary.date, primary.time);
       const primaryEndTime  = (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '';
