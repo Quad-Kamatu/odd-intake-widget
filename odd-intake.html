@@ -83,8 +83,14 @@
       <h1 class="text-2xl font-semibold page-title">Service Request</h1>
     </div>
 
+    <!-- Loading Card (shown until catalog + first card render) -->
+    <div id="loadingCard" class="card bg-gray-50 border border-gray-200 flex items-center gap-3">
+      <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg>
+      <div class="text-sm text-gray-700">Loading services…</div>
+    </div>
+
     <!-- Identity & Discounts -->
-    <div id="identityCard" class="card">
+    <div id="identityCard" class="card" style="display:none;">
       <div class="grid md:grid-cols-2 gap-4">
         <div class="space-y-4">
           <div class="lbl">Your Info</div>
@@ -101,7 +107,6 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-            <!-- discount badge removed by request -->
           </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
@@ -124,7 +129,7 @@
     </div>
 
     <!-- Services Form -->
-    <form id="intakeForm" class="space-y-6" novalidate>
+    <form id="intakeForm" class="space-y-6" novalidate style="display:none;">
       <div id="servicesContainer" class="space-y-6"></div>
 
       <div class="card bg-white border border-gray-200">
@@ -210,22 +215,43 @@
           try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
         });
+        // Fallback: some hosts rewrite the embedding origin; also broadcast to '*'
+        try{ window.parent.postMessage(msgStd, '*'); }catch(_){/*noop*/}
+        try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){/*noop*/}
+      }
+    }catch(_){/*noop*/}
+  };
+      const msgLegacy = { oddIntakeHeight: px, ts };
+      if (window.parent){
+        (ALLOWED_PARENTS||[]).forEach(origin=>{
+          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
+          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
+        });
       }
     }catch(_){/*noop*/}
   }
 
   let __lastHeight = 0;
   function measureHeight(){
+    const pad = 12;
     const root = document.querySelector('.max-w-4xl');
+    const c = [];
     if (root){
       const rect = root.getBoundingClientRect();
-      return Math.ceil(rect.bottom + 8);
+      c.push(rect.height + pad, rect.bottom + 8);
+      c.push(root.scrollHeight + pad, root.offsetHeight + pad);
     }
-    const d = document.documentElement;
-    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
+    const d=document.documentElement, b=document.body;
+    const dRect = d?.getBoundingClientRect?.() || { height:0, bottom:0 };
+    const bRect = b?.getBoundingClientRect?.() || { height:0, bottom:0 };
+    c.push(d.scrollHeight||0, b.scrollHeight||0, d.offsetHeight||0, b.offsetHeight||0, d.clientHeight||0, b.clientHeight||0);
+    c.push(dRect.height + window.scrollY + pad, bRect.height + window.scrollY + pad);
+    const px = Math.max(...c.map(n=>Math.ceil(Number(n)||0)), 320);
+    return px;
   }
+    const d=document.documentElement, b=document.body;
     candidates.push(d?.scrollHeight||0, b?.scrollHeight||0, d?.offsetHeight||0, b?.offsetHeight||0, d?.clientHeight||0, b?.clientHeight||0);
-    const px = Math.max(...candidates.filter(n=>Number.isFinite(n)), 320);
+    const px = Math.max(...candidates.map(n=>Math.ceil(Number(n)||0)), 320);
     return px;
   }
 
@@ -263,7 +289,6 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  // discount badge feature removed
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -685,6 +710,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
+    // Prevent double init if host injects twice
+    if (window.__ODD_WIDGET_INITD) { return; }
+    window.__ODD_WIDGET_INITD = true;
+
+    // show loading card immediately and start height pings
+    sendHeight(true);
+    const loading = document.getElementById('loadingCard');
+
     // Ensure mailing list defaults to YES if nothing chosen
     try {
       const yes = document.querySelector('input[name="mailing"][value="yes"]');
@@ -704,13 +737,23 @@
 
     // 2) Build primary service card
     addServiceCard(true);
+
+    // Reveal UI, hide loader
+    const idc = document.getElementById('identityCard'); if (idc) idc.style.display = '';
+    const form = document.getElementById('intakeForm'); if (form) form.style.display = '';
+    if (loading) loading.style.display = 'none';
+
     // Immediate height pings after first render (a few bursts to catch async layout)
     sendHeight(true);
+    const burst1 = setInterval(()=>sendHeight(false), 150);
+    setTimeout(()=>clearInterval(burst1), 2000);
     setTimeout(()=>sendHeight(true), 120);
     setTimeout(()=>sendHeight(true), 360);
     setTimeout(()=>sendHeight(true), 1000);
     if (document.fonts && document.fonts.ready) {
-      try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){}}
+      try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){}
+    }); } catch(_){}
+    }
 
     // 3) Height observers → Wix
     try{
@@ -719,7 +762,6 @@
         ro.observe(document.body);
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
         const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
-        const idc = document.getElementById('identityCard'); if (idc) ro.observe(idc);
         const succ = document.getElementById('successScreen'); if (succ) ro.observe(succ);
       }
       window.addEventListener('load', ()=>sendHeight(true));
@@ -836,6 +878,7 @@
         console.error('[submit] error', err);
         alert('Sorry, something went wrong sending your request. Please try again.');
       } finally {
+        const btn = document.getElementById('submitBtn');
         if (btn){
           btn.dataset.loading = '0';
           btn.classList.remove('btn-loading');
