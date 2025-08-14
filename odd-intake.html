@@ -215,18 +215,9 @@
           try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
         });
-        // Fallback: some hosts rewrite the embedding origin; also broadcast to '*'
+        // Fallback broadcast
         try{ window.parent.postMessage(msgStd, '*'); }catch(_){/*noop*/}
         try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){/*noop*/}
-      }
-    }catch(_){/*noop*/}
-  };
-      const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
-          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
-        });
       }
     }catch(_){/*noop*/}
   }
@@ -247,11 +238,6 @@
     c.push(d.scrollHeight||0, b.scrollHeight||0, d.offsetHeight||0, b.offsetHeight||0, d.clientHeight||0, b.clientHeight||0);
     c.push(dRect.height + window.scrollY + pad, bRect.height + window.scrollY + pad);
     const px = Math.max(...c.map(n=>Math.ceil(Number(n)||0)), 320);
-    return px;
-  }
-    const d=document.documentElement, b=document.body;
-    candidates.push(d?.scrollHeight||0, b?.scrollHeight||0, d?.offsetHeight||0, b?.offsetHeight||0, d?.clientHeight||0, b?.clientHeight||0);
-    const px = Math.max(...candidates.map(n=>Math.ceil(Number(n)||0)), 320);
     return px;
   }
 
@@ -752,7 +738,6 @@
     setTimeout(()=>sendHeight(true), 1000);
     if (document.fonts && document.fonts.ready) {
       try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){}
-    }); } catch(_){}
     }
 
     // 3) Height observers → Wix
