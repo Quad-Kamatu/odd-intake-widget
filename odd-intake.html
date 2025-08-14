@@ -216,7 +216,24 @@
   let __lastHeight = 0;
   function measureHeight(){
     const root = document.querySelector('.max-w-4xl');
-    if (root){ const rect = root.getBoundingClientRect(); return Math.ceil(rect.bottom + 8); }
+    const pad = 12;
+    if (root){
+      const rect = root.getBoundingClientRect();
+      // Consider several strategies and take the max to avoid under-measuring
+      const h1 = Math.ceil(rect.height + pad);
+      const h2 = Math.ceil(root.scrollHeight + pad);
+      const h3 = Math.ceil(document.documentElement.scrollHeight || 0);
+      const h4 = Math.ceil(document.body.scrollHeight || 0);
+      return Math.max(h1, h2, h3, h4, 320);
+    }
+    const d = document.documentElement;
+    const b = document.body;
+    return Math.max(
+      Math.ceil(d?.scrollHeight || 0),
+      Math.ceil(b?.scrollHeight || 0),
+      320
+    );
+  }
     const d = document.documentElement; return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
   }
   function sendHeight(immediateFollowups){
@@ -496,7 +513,7 @@
 
       // Basic flags
       const unit = meta.priceUnit || 'flat';
-      const isEvent = !!meta.isEvent || ['photography','videography'].includes((meta.serviceKey||'').toLowerCase());
+      const isEvent = !!meta.isEvent;
 
       // Event basics
       wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
@@ -520,7 +537,7 @@
       renderComplexity(meta);
 
       // Audio
-      const showAudio = isVideography(meta) && !isVideoEditing(meta);
+      const showAudio = !!meta.showAudioOption;
       wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
 
@@ -681,6 +698,8 @@
 
     // 2) Build primary service card
     addServiceCard(true);
+    // Immediate height ping after first render
+    sendHeight(true);
 
     // 3) Height observers → Wix
     try{
@@ -689,6 +708,8 @@
         ro.observe(document.body);
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
         const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
+        const idc = document.getElementById('identityCard'); if (idc) ro.observe(idc);
+        const succ = document.getElementById('successScreen'); if (succ) ro.observe(succ);
       }
       window.addEventListener('load', ()=>sendHeight(true));
       (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
