@@ -6,33 +6,16 @@
   <title>Odd Embeddable Intake Widget</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root{
-      --c1:#FF9D76; /* coral */
-      --c2:#76F1FF; /* cyan */
-      --c3:#C176FF; /* violet */
-      --c4:#FFE176; /* saffron */
-    }
-
+    :root{ --c1:#FF9D76; --c2:#76F1FF; --c3:#C176FF; --c4:#FFE176; }
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-
     html, body { height: 100%; margin:0; padding:0; background:transparent; }
     body{ color:#111; position:relative; }
-
-    /* Fluid, shifting gradient background */
-    html::before{
-      content:"";
-      position:fixed; left:0; top:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1;
+    html::before{ content:""; position:fixed; left:0; top:0; right:0; bottom:0; width:100vw; height:100vh; z-index:-1;
       background: linear-gradient(var(--ang), var(--c1), var(--c2), var(--c3), var(--c4));
-      background-size: 200% 200%;
-      animation: bg-pan 18s ease-in-out infinite alternate, bg-rotate 36s linear infinite;
-      filter: saturate(1.03);
-      pointer-events:none;
-    }
-
+      background-size: 200% 200%; animation: bg-pan 18s ease-in-out infinite alternate, bg-rotate 36s linear infinite; filter: saturate(1.03); pointer-events:none; }
     @keyframes bg-pan { 0%{background-position:0% 0%} 50%{background-position:100% 0%} 100%{background-position:0% 100%} }
     @keyframes bg-rotate { to { --ang: 360deg; } }
     @media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
-
     .card{ box-shadow:0 8px 20px rgba(0,0,0,.06); border-radius:16px; background:#fff; padding:24px; border:1px solid #eaeaea; }
     .lbl{ font-size:0.9rem; font-weight:600; color:#222; }
     .inp{ width:100%; margin-top:4px; border:1px solid #ddd; border-radius:12px; padding:10px 12px; outline:none; }
@@ -45,12 +28,9 @@
     .btn-disabled{ background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; cursor:not-allowed; }
     .badge{ display:inline-block; border-radius:9999px; font-size:.85rem; padding:6px 10px; border:1px solid #ccc; background:#f3f3f3; color:#111; }
     .mono{ font-variant-numeric: tabular-nums; }
-    .muted{ opacity:.6; }
     a.link{ color:#111; text-decoration:underline; }
     .service-card{ border:1px dashed #e5e7eb; border-radius:16px; padding:16px; }
     .page-title, .page-subtitle{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); }
-
-    /* Film length slider styles */
     .filmSlider{ --val:0%; accent-color:#76F1FF; height:2rem; width:100%; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); border-radius:9999px; }
     .filmSlider:focus{ outline:none; }
     .filmSlider::-webkit-slider-runnable-track{ height:6px; border-radius:9999px; background:linear-gradient(to right, #76F1FF 0%, #76F1FF var(--val), #dbeafe var(--val), #dbeafe 100%); }
@@ -59,19 +39,10 @@
     .filmSlider::-moz-range-track{ height:6px; border-radius:9999px; background:#dbeafe; }
     .filmSlider::-moz-range-progress{ height:6px; border-radius:9999px; background:#76F1FF; }
     .filmSlider::-moz-range-thumb{ width:18px; height:18px; border-radius:9999px; background:#76F1FF; border:2px solid #76F1FF; box-shadow:0 1px 2px rgba(0,0,0,.15); }
-
-    .service-card .row,
-    .service-card .eventRow,
-    .service-card .locationRow,
-    .service-card .qtyRow,
-    .service-card .headshotRow,
-    .service-card .complexityWrap,
-    .service-card .audioWrap,
-    .service-card .addonsWrap{ margin-bottom:16px; }
+    .service-card .row, .service-card .eventRow, .service-card .locationRow, .service-card .qtyRow, .service-card .headshotRow, .service-card .complexityWrap, .service-card .audioWrap, .service-card .addonsWrap{ margin-bottom:16px; }
     .service-card .filmLenWrap{ margin-bottom:12px; }
     .service-card .complexityWrap .help{ margin-top:8px; }
     .service-card > :last-child{ margin-bottom:0 !important; }
-
     @keyframes spin{ to{ transform: rotate(360deg); } }
     .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
     .btn.btn-loading{ cursor:progress; }
@@ -83,14 +54,7 @@
       <h1 class="text-2xl font-semibold page-title">Service Request</h1>
     </div>
 
-    <!-- Loading Card (shown until catalog + first card render) -->
-    <div id="loadingCard" class="card bg-gray-50 border border-gray-200 flex items-center gap-3">
-      <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg>
-      <div class="text-sm text-gray-700">Loading services…</div>
-    </div>
-
-    <!-- Identity & Discounts -->
-    <div id="identityCard" class="card" style="display:none;">
+    <div id="identityCard" class="card">
       <div class="grid md:grid-cols-2 gap-4">
         <div class="space-y-4">
           <div class="lbl">Your Info</div>
@@ -128,8 +92,7 @@
       </div>
     </div>
 
-    <!-- Services Form -->
-    <form id="intakeForm" class="space-y-6" novalidate style="display:none;">
+    <form id="intakeForm" class="space-y-6" novalidate>
       <div id="servicesContainer" class="space-y-6"></div>
 
       <div class="card bg-white border border-gray-200">
@@ -176,7 +139,7 @@
           <div>
             <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
             <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" checked /> Yes</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" checked/> Yes</label>
               <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
             </div>
           </div>
@@ -196,12 +159,7 @@
   </div>
 
   <script>
-  // -------- CONFIG / CATALOG --------
-  const CONFIG = {
-    mode: 'api',
-    api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit', catalogPath: '/catalog' },
-    catalog: null
-  };
+  const CONFIG = { mode: 'api', api: { baseUrl: 'https://www.onedaydance.com/_functions', webhookPath: '/submit', catalogPath: '/catalog' }, catalog: null };
   const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
 
   // -------- HEIGHT MESSAGING --------
@@ -210,55 +168,30 @@
       const ts = Date.now();
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
       const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
-          try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
-        });
-        // Fallback broadcast
-        try{ window.parent.postMessage(msgStd, '*'); }catch(_){/*noop*/}
-        try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){/*noop*/}
-      }
-    }catch(_){/*noop*/}
+      if (window.parent){ (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage(msgStd, origin); }catch(_){}
+        try{ window.parent.postMessage(msgLegacy, origin); }catch(_){} }); }
+    }catch(_){}
   }
-
   let __lastHeight = 0;
   function measureHeight(){
-    // Measure intrinsic content height only to avoid feedback loops with the host iframe.
-    const pad = 12;
     const root = document.querySelector('.max-w-4xl');
-    let contentH = 0;
-    if (root){
-      // Prefer scrollHeight/offsetHeight which are independent of iframe outer size.
-      const sh = Math.ceil(root.scrollHeight || 0);
-      const oh = Math.ceil(root.offsetHeight  || 0);
-      contentH = Math.max(sh, oh);
-    }
-    const docH = Math.max(
-      Math.ceil(document.documentElement?.scrollHeight || 0),
-      Math.ceil(document.body?.scrollHeight || 0)
-    );
-    const px = Math.max(contentH, docH, 320) + pad;
-    return Math.ceil(px);
+    if (!root) return 360;
+    const rectH = Math.ceil(root.getBoundingClientRect().height);
+    const offH  = Math.ceil(root.offsetHeight || 0);
+    const scrollH = Math.ceil(root.scrollHeight || 0);
+    const arr = [rectH, offH, scrollH].filter(n=>Number.isFinite(n)&&n>0).sort((a,b)=>a-b);
+    const median = arr.length ? arr[Math.floor(arr.length/2)] : rectH || offH || scrollH || 360;
+    return Math.max(320, median + 8);
   }
-
   function sendHeight(burst=true){
     try{
       const px = Math.ceil(measureHeight());
-      if (Math.abs(px - __lastHeight) > 1){
-        __lastHeight = px;
-        postHeights(px);
-        if (burst){
-          requestAnimationFrame(()=>sendHeight(false));
-          setTimeout(()=>sendHeight(false), 60);
-          setTimeout(()=>sendHeight(false), 180);
-          setTimeout(()=>sendHeight(false), 500);
-          setTimeout(()=>sendHeight(false), 1000);
-        }
+      if (Math.abs(px - __lastHeight) >= 4){
+        __lastHeight = px; postHeights(px);
+        if (burst){ requestAnimationFrame(()=>sendHeight(false)); setTimeout(()=>sendHeight(false), 120); setTimeout(()=>sendHeight(false), 360); }
       }
-    }catch(_){/*noop*/}
+    }catch(_){}
   }
-
   function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
   const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
 
@@ -274,9 +207,7 @@
 
   // -------- STATE --------
   const state = { services: [] };
-
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
   function isVideoEditing(meta){ return (meta?.subType||'')==='Video Editing'; }
@@ -312,7 +243,7 @@
           with your request while we resolve this.
         </p>
       </div>`;
-    try { const h = measureHeight(); postHeights(h); setTimeout(()=>postHeights(measureHeight()), 200); } catch(_){/*noop*/}
+    try { const h = measureHeight(); postHeights(h); setTimeout(()=>postHeights(measureHeight()), 200); } catch(_){}
   }
 
   // -------- SERVICE CARD --------
@@ -493,7 +424,6 @@
         }
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
         if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
           const hoursWrap = document.createElement('label'); hoursWrap.className='block';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
@@ -522,18 +452,15 @@
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
       if (!meta){ resetServiceUI(); updateSubmitState(); debouncedSendHeight(); return; }
 
-      // Basic flags (use CMS only)
       const unit = meta.priceUnit || 'flat';
       const isEvent = !!meta.isEvent;
 
-      // Event basics
       wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
       wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
       wrap.querySelector('.date').required = isEvent;
       wrap.querySelector('.time').required = isEvent;
       wrap.querySelector('.location').required = isEvent;
 
-      // Quantities
       wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
       wrap.querySelector('.hoursWrap').style.display = (unit==='perHour') ? '' : 'none';
       wrap.querySelector('.filmLenWrap').style.display = (unit==='perMinute') ? '' : 'none';
@@ -544,22 +471,18 @@
 
       if (unit==='perHeadshot'){ const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); } }
 
-      // Complexity
       renderComplexity(meta);
 
-      // Audio (CMS-driven)
       const showAudio = !!meta.showAudioOption;
       wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
 
-      // Add-ons
       renderAddons({ ...meta, offeringId: svc.offeringId });
 
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
       updateSubmitState(); debouncedSendHeight();
     }
 
-    // Listeners
     typeSel.addEventListener('change', () => { refreshSubs(); });
     subSel.addEventListener('change', () => {
       const offId = subSel.value;
@@ -569,7 +492,6 @@
     });
     refreshSubs();
 
-    // Qty & length
     wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
     const filmSlider = wrap.querySelector('.filmSlider');
     const unitsInput = wrap.querySelector('.units');
@@ -578,22 +500,18 @@
     const headshotsInput = wrap.querySelector('.headshots');
     if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
 
-    // Date/time/location
     wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); });
     wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); });
     wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); });
 
-    // Audio choice
     wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); }));
 
-    // Remove card
     const removeBtn = wrap.querySelector('.remove');
     if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); debouncedSendHeight(); }); }
 
     return wrap;
   }
 
-  // -------- PRICING --------
   function addonCostForService(meta, svc){
     const adds = (CONFIG.catalog.addons||[]).filter(a=>{
       const byCat = (a.appliesToCategories||[]).map(x=>String(x).toLowerCase()).includes((meta.serviceKey||'').toLowerCase());
@@ -607,7 +525,7 @@
       if (!hasVal) return;
       let qty = 1;
       if (ad.selectionMode==='integer') qty = Math.min(Math.max(0, Number(val)||0), Number(ad.maxQty)||99);
-      if (ad.selectionMode==='string') qty = 0; // informational only
+      if (ad.selectionMode==='string') qty = 0;
 
       let cost = 0; let desc = ad.label;
       const mode = (ad.pricingMode||'flat');
@@ -632,15 +550,11 @@
     if (meta.complexityBase && serviceEligibleForComplexity(meta)){
       baseRate = Number(meta.complexityBase[svc.complexity] ?? baseRate) || 0;
     }
-    const qty = unit==='perHour' ? (Number(svc.hours)||1)
-              : unit==='perMinute' ? (Number(svc.units)||1)
-              : unit==='perHeadshot' ? (Number(svc.units)||1)
-              : 1;
+    const qty = unit==='perHour' ? (Number(svc.hours)||1) : unit==='perMinute' ? (Number(svc.units)||1) : unit==='perHeadshot' ? (Number(svc.units)||1) : 1;
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
     lines.push(`Base (${esc(meta.subType)} — ${esc(unit)}): $${money(base)}${meta.startingAt?'+':''}`);
 
-    // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
     let setupFee = 0;
     if (isVideography(meta) && unit==='perHour' && Number(meta.setupTime)>0){
       setupFee = (Number(meta.basePrice)||0) * Number(meta.setupTime);
@@ -655,10 +569,8 @@
   function costForService(svc){
     const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
     if (!meta) return { subtotal:0, lines:[] };
-
     const base = baseCostForService(meta, svc);
     const addons = addonCostForService({ ...meta, offeringId: svc.offeringId }, svc);
-
     const subtotal = base.base + base.setupFee + addons.total;
     const lines = [...base.lines, ...addons.lines];
     return { subtotal, lines };
@@ -697,217 +609,24 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
-  const loading = document.getElementById('loadingCard');
-  // Start height pings immediately so host can reserve space
-  sendHeight(true);
-
-  // Ensure mailing list defaults to YES if nothing chosen
-  try {
-    const yes = document.querySelector('input[name="mailing"][value="yes"]');
-    const anyChecked = document.querySelector('input[name="mailing"]:checked');
-    if (yes && !anyChecked) yes.checked = true;
-  } catch(_){}
-
-  // 1) Load catalog (with fatal fallback)
-  try{
-    const ok = await loadCatalog();
-    if (!ok || !CONFIG.catalog) throw new Error('Catalog failed');
-  }catch(err){
-    console.error('Catalog load failed', err);
-    renderFatal('Our system can\'t load the services catalog right now.');
-    if (loading) loading.style.display = 'none';
-    return;
-  }
-
-  // 2) Build primary card ONCE (idempotent). Only set the init flag after success.
-  try {
-    const hasCard = !!document.querySelector('.service-card');
-    if (!hasCard) addServiceCard(true);
-    // mark initialized only after at least one card is in the DOM
-    window.__ODD_WIDGET_INITD = true;
-  } catch (e) {
-    console.error('Build card failed', e);
-    renderFatal('Something went wrong initializing the form.');
-    if (loading) loading.style.display = 'none';
-    return;
-  }
-
-  // 3) Reveal UI, hide loader
-  const idc = document.getElementById('identityCard'); if (idc) idc.style.display = '';
-  const form = document.getElementById('intakeForm'); if (form) form.style.display = '';
-  if (loading) loading.style.display = 'none';
-
-  // 4) Height: immediate bursts to settle, then observers
-  sendHeight(true);
-  const burst1 = setInterval(()=>sendHeight(false), 150);
-  setTimeout(()=>clearInterval(burst1), 2000);
-  setTimeout(()=>sendHeight(true), 120);
-  setTimeout(()=>sendHeight(true), 360);
-  setTimeout(()=>sendHeight(true), 1000);
-  if (document.fonts && document.fonts.ready) {
-    try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){ }
-  }
-
-  // Observers (idempotent, safe if attached twice)
-  try{
-    if (window.ResizeObserver){
-      const ro = new ResizeObserver(()=>debouncedSendHeight());
-      ro.observe(document.body);
-      const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
-      const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
-      const succ = document.getElementById('successScreen'); if (succ) ro.observe(succ);
-    }
-    window.addEventListener('load', ()=>sendHeight(true));
-    (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
-    document.addEventListener('input', debouncedSendHeight);
-    document.addEventListener('change', debouncedSendHeight);
-    document.addEventListener('click', debouncedSendHeight);
-    window.addEventListener('resize', debouncedSendHeight);
-    try {
-      const mo=new MutationObserver(()=>debouncedSendHeight());
-      mo.observe(document.body,{childList:true,subtree:true,attributes:true});
-    } catch(_){ }
-    setTimeout(()=>sendHeight(true), 0);
-  }catch(e){ /* noop */ }
-
-  // 5) Discount listeners (badge already removed earlier)
-  document.querySelectorAll('input[name="selfDiscount"]').forEach(r=>{
-    r.addEventListener('change', ()=>{ updateQuote(); });
-  });
-
-  // 6) Add another service
-  document.getElementById('addServiceBtn').addEventListener('click', ()=>{
-    addServiceCard(false);
-    updateQuote();
-    updateSubmitState();
-    debouncedSendHeight();
-  });
-
-  // 7) Form validation hooks
-  const formEl = document.getElementById('intakeForm');
-  formEl.addEventListener('input', updateSubmitState);
-  formEl.addEventListener('change', updateSubmitState);
-
-  // 8) Submit (unchanged other than success heuristics)
-  document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    if (btn && btn.dataset.loading === '1') return;
-    if (!e.target.checkValidity()){ updateSubmitState(); return; }
-
-    if (btn){
-      btn.dataset.loading = '1';
-      btn.disabled = true;
-      btn.classList.add('btn-disabled','btn-loading');
-      btn.classList.remove('btn-primary');
-      btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a 9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
-    }
-
-    let submitOk = false;
-
-    const primary = state.services[0] || {};
-    const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {};
-    const unit = meta.priceUnit || 'flat';
-    const payload = {
-      firstName: document.getElementById('firstNameInput').value,
-      lastName: document.getElementById('lastNameInput').value,
-      email: document.getElementById('emailInput').value.trim().toLowerCase(),
-      organizationName: document.getElementById('orgInput')?.value || '',
-      discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
-      discountAppliedPercent: bestDiscountPercent(),
-      mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
-      additionalInfo: document.getElementById('additionalInfo')?.value || '',
-      requestedProviders: document.getElementById('requestedProviders')?.value || '',
-      services: state.services,
-      quoteTotal: document.getElementById('quoteTotal').textContent,
-      quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-      primaryDateTime: combineDateTime(primary.date, primary.time),
-      primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
-      primaryVenue: primary.location || '',
-      primaryServiceType: meta.subType || '',
-      primaryIsEvent: !!meta.isEvent,
-      needsAudioRecording: (!!meta.showAudioOption)
-        ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
-        : '',
-      // Legacy mirrors for upstreams
-      date: primary.date || '',
-      time: primary.time || '',
-      endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
-      location: primary.location || '',
-      serviceType: meta.subType || '',
-      audioRecording: (!!meta.showAudioOption)
-        ? (primary.audio==='yes' ? 'Yes' : (primary.audio==='no' ? 'No' : ''))
-        : ''
-    };
-
     try{
-      const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-      const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-      let raw = ''; let body = null;
-      try { raw = await res.text(); } catch(_) {}
-      try { body = raw ? JSON.parse(raw) : null; } catch(_) {}
-      const bodyOk = !!(body && (body.success === true || body.ok === true));
+      const ok = await loadCatalog();
+      if (!ok || !CONFIG.catalog) throw new Error('Catalog failed');
+    }catch(err){ console.error('Catalog load failed', err); renderFatal('Our system can\'t load the services catalog right now.'); return; }
 
-      if ((res.status >= 200 && res.status < 300) || bodyOk || (raw||'').toLowerCase().includes('ok')) {
-        submitOk = true;
-      } else {
-        throw new Error(body?.error || body?.upstreamBody || raw || `HTTP ${res.status}`);
-      }
+    addServiceCard(true);
+    sendHeight(true);
+    setTimeout(()=>sendHeight(true), 120);
+    setTimeout(()=>sendHeight(true), 360);
+    if (document.fonts && document.fonts.ready) { try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){} }
 
-      // Success UI
-      const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
-      const form = document.getElementById('intakeForm'); if (form) form.style.display = 'none';
-      const success = document.getElementById('successScreen');
-      if (success){
-        const who = document.getElementById('firstNameInput')?.value || 'Thank you';
-        document.getElementById('successRef').textContent = new Date().toLocaleString();
-        success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
-        success.style.display = '';
-      }
-      const nowH = measureHeight();
-      (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
-      postHeights(nowH);
-      const _int = setInterval(()=>postHeights(measureHeight()), 200);
-      setTimeout(()=>clearInterval(_int), 2000);
-
-    }catch(err){
-      console.error('[submit] error', err);
-      alert('Sorry, something went wrong sending your request. Please try again.');
-    } finally {
-      const btn = document.getElementById('submitBtn');
-      if (btn){
-        btn.dataset.loading = '0';
-        btn.classList.remove('btn-loading');
-        if (!submitOk) {
-          btn.disabled = false;
-          btn.classList.remove('btn-disabled');
-          btn.classList.add('btn-primary');
-          btn.textContent = 'Submit Request';
-        } else {
-          btn.disabled = true;
-          btn.classList.add('btn-disabled');
-          btn.classList.remove('btn-primary');
-          btn.textContent = 'Submit Request';
-        }
-      }
-      updateSubmitState();
-      postHeights(measureHeight());
-    }
-  });
-
-  updateSubmitState();
-  sendHeight(true);
-});
-} catch(_){}
-    }
-
-    // 3) Height observers → Wix
     try{
       if (window.ResizeObserver){
         const ro = new ResizeObserver(()=>debouncedSendHeight());
         ro.observe(document.body);
         const sc = document.getElementById('servicesContainer'); if (sc) ro.observe(sc);
         const root = document.querySelector('.max-w-4xl'); if (root) ro.observe(root);
+        const idc = document.getElementById('identityCard'); if (idc) ro.observe(idc);
         const succ = document.getElementById('successScreen'); if (succ) ro.observe(succ);
       }
       window.addEventListener('load', ()=>sendHeight(true));
@@ -916,43 +635,27 @@
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
-      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true,attributes:true}); }catch(_){/*noop*/}
+      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true}); }catch(_){}
       setTimeout(()=>sendHeight(true), 0);
-    }catch(e){ /* noop */ }
+    }catch(e){}
 
-    // 4) Discount listeners (badge removed)
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
-    // 5) Add another service
     document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
 
-    // 6) Form validation hooks
     const formEl = document.getElementById('intakeForm');
     formEl.addEventListener('input', updateSubmitState);
     formEl.addEventListener('change', updateSubmitState);
 
-    // 7) Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
-      // Spinner state
-      if (btn){
-        btn.dataset.loading = '1';
-        btn.disabled = true;
-        btn.classList.add('btn-disabled','btn-loading');
-        btn.classList.remove('btn-primary');
-        btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
-      }
+      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
 
-      let submitOk = false;
-
-      // Build payload
-      const primary = state.services[0] || {};
-      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {};
-      const unit = meta.priceUnit || 'flat';
+      const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -974,7 +677,6 @@
         needsAudioRecording: (!!meta.showAudioOption)
           ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
           : '',
-        // Legacy mirrors for upstreams
         date: primary.date || '',
         time: primary.time || '',
         endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
@@ -987,77 +689,23 @@
 
       try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-        const res = await fetch(url, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        // Be very permissive: treat ANY 2xx as success, regardless of body.
-        let raw = '';
-        let body = null;
-        try { raw = await res.text(); } catch(_) {}
-        try { body = raw ? JSON.parse(raw) : null; } catch(_) {}
-
+        const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+        let body = null; try { body = await res.json(); } catch(_) {}
         const bodyOk = !!(body && (body.success === true || body.ok === true));
-        if (res.status >= 200 && res.status < 300) {
-          submitOk = true;
-        } else if (bodyOk) {
-          submitOk = true;
-        } else {
-          // Last-resort heuristic: some upstreams return plain text containing 'ok'
-          const t = (raw || '').toLowerCase();
-          if (t.includes('ok') || t.includes('success')) submitOk = true;
-        }
+        if (!res.ok && !bodyOk) { const detail = body?.error || body?.upstreamBody || `HTTP ${res.status}`; throw new Error(`Submit failed: ${detail}`); }
 
-        if (!submitOk) {
-          const detail = body?.error || body?.upstreamBody || raw || `HTTP ${res.status}`;
-          throw new Error(`Submit failed: ${detail}`);
-        }
-
-        // Success UI
         const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
         const form = document.getElementById('intakeForm'); if (form) form.style.display = 'none';
         const success = document.getElementById('successScreen');
-        if (success){
-          const who = document.getElementById('firstNameInput')?.value || 'Thank you';
-          document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
-          success.style.display = '';
-        }
-        const nowH = measureHeight();
-        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
-        postHeights(nowH);
-        const _int = setInterval(()=>postHeights(measureHeight()), 200);
-        setTimeout(()=>clearInterval(_int), 2000);
-
-      }catch(err){
-        console.error('[submit] error', err);
-        alert('Sorry, something went wrong sending your request. Please try again.');
-      } finally {
-        const btn = document.getElementById('submitBtn');
-        if (btn){
-          btn.dataset.loading = '0';
-          btn.classList.remove('btn-loading');
-          if (!submitOk) {
-            btn.disabled = false;
-            btn.classList.remove('btn-disabled');
-            btn.classList.add('btn-primary');
-            btn.textContent = 'Submit Request';
-          } else {
-            btn.disabled = true;
-            btn.classList.add('btn-disabled');
-            btn.classList.remove('btn-primary');
-            btn.textContent = 'Submit Request';
-          }
-        }
-        updateSubmitState();
-        postHeights(measureHeight());
-      }
+        if (success){ const who = document.getElementById('firstNameInput')?.value || 'Thank you'; document.getElementById('successRef').textContent = new Date().toLocaleString(); success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`; success.style.display = ''; }
+        const nowH = measureHeight(); (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){} }); postHeights(nowH);
+        const _int = setInterval(()=>postHeights(measureHeight()), 200); setTimeout(()=>clearInterval(_int), 2000);
+      }catch(err){ console.error('[submit] error', err); alert('Sorry, something went wrong sending your request. Please try again.'); }
+      finally{ if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
+        updateSubmitState(); postHeights(measureHeight()); }
     });
 
     updateSubmitState();
-    // Initial height ping after first render of primary card
     sendHeight(true);
   });
   </script>
