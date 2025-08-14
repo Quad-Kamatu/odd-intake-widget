@@ -224,14 +224,25 @@
 
   let __lastHeight = 0;
   function measureHeight(){
+    // Measure ONLY intrinsic content height to avoid feedback loops.
+    // Do NOT use clientHeight/offsetHeight/rect.bottom because the parent resizes the iframe,
+    // which would make those values balloon on each postMessage.
     const pad = 12;
     const root = document.querySelector('.max-w-4xl');
-    const c = [];
+    let contentH = 0;
     if (root){
-      const rect = root.getBoundingClientRect();
-      c.push(rect.height + pad, rect.bottom + 8);
-      c.push(root.scrollHeight + pad, root.offsetHeight + pad);
+      const rectH = Math.ceil(root.getBoundingClientRect().height || 0);
+      const scrollH = Math.ceil(root.scrollHeight || 0);
+      const offsetH = Math.ceil(root.offsetHeight || 0);
+      contentH = Math.max(rectH, scrollH, offsetH);
     }
+    const docH = Math.max(
+      Math.ceil(document.documentElement?.scrollHeight || 0),
+      Math.ceil(document.body?.scrollHeight || 0)
+    );
+    const px = Math.max(contentH, docH, 320) + pad;
+    return Math.ceil(px);
+  }
     const d=document.documentElement, b=document.body;
     const dRect = d?.getBoundingClientRect?.() || { height:0, bottom:0 };
     const bRect = b?.getBoundingClientRect?.() || { height:0, bottom:0 };
