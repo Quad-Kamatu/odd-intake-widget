@@ -749,16 +749,35 @@
         mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
         requestedProviders: document.getElementById('requestedProviders')?.value || '',
+
+        // Full services detail (array of every service card)
         services: state.services,
+
+        // Totals & breakdown
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
+
+        // Primary service summary (new fields)
         primaryDateTime: combineDateTime(primary.date, primary.time),
         primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
         primaryVenue: primary.location || '',
         primaryServiceType: meta.subType || '',
-        needsAudioRecording: (isVideography(meta) && !isVideoEditing(meta)) ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : '')) : '',
-        tosAccepted: !!document.getElementById('tosCheck')?.checked,
-        bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
+        primaryIsEvent: !!meta.isEvent,
+        needsAudioRecording: (!!meta.showAudioOption)
+          ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
+          : '',
+
+        // --- Legacy mirror fields for Apps Script/Discord -----
+        // (kept for backward compatibility so upstreams that expect
+        // simple top-level keys still work)
+        date: primary.date || '',
+        time: primary.time || '',
+        endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
+        location: primary.location || '',
+        serviceType: meta.subType || '',
+        audioRecording: (!!meta.showAudioOption)
+          ? (primary.audio==='yes' ? 'Yes' : (primary.audio==='no' ? 'No' : ''))
+          : ''
       };
 
       try{
