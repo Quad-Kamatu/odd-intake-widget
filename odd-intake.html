@@ -224,17 +224,15 @@
 
   let __lastHeight = 0;
   function measureHeight(){
-    // Measure ONLY intrinsic content height to avoid feedback loops.
-    // Do NOT use clientHeight/offsetHeight/rect.bottom because the parent resizes the iframe,
-    // which would make those values balloon on each postMessage.
+    // Measure intrinsic content height only to avoid feedback loops with the host iframe.
     const pad = 12;
     const root = document.querySelector('.max-w-4xl');
     let contentH = 0;
     if (root){
-      const rectH = Math.ceil(root.getBoundingClientRect().height || 0);
-      const scrollH = Math.ceil(root.scrollHeight || 0);
-      const offsetH = Math.ceil(root.offsetHeight || 0);
-      contentH = Math.max(rectH, scrollH, offsetH);
+      // Prefer scrollHeight/offsetHeight which are independent of iframe outer size.
+      const sh = Math.ceil(root.scrollHeight || 0);
+      const oh = Math.ceil(root.offsetHeight  || 0);
+      contentH = Math.max(sh, oh);
     }
     const docH = Math.max(
       Math.ceil(document.documentElement?.scrollHeight || 0),
@@ -242,14 +240,6 @@
     );
     const px = Math.max(contentH, docH, 320) + pad;
     return Math.ceil(px);
-  }
-    const d=document.documentElement, b=document.body;
-    const dRect = d?.getBoundingClientRect?.() || { height:0, bottom:0 };
-    const bRect = b?.getBoundingClientRect?.() || { height:0, bottom:0 };
-    c.push(d.scrollHeight||0, b.scrollHeight||0, d.offsetHeight||0, b.offsetHeight||0, d.clientHeight||0, b.clientHeight||0);
-    c.push(dRect.height + window.scrollY + pad, bRect.height + window.scrollY + pad);
-    const px = Math.max(...c.map(n=>Math.ceil(Number(n)||0)), 320);
-    return px;
   }
 
   function sendHeight(burst=true){
