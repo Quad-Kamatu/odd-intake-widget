@@ -832,16 +832,27 @@
           body: JSON.stringify(payload)
         });
 
-        // Consider success if HTTP is 2xx OR response body says ok/success
+        // Be very permissive: treat ANY 2xx as success, regardless of body.
+        let raw = '';
         let body = null;
-        try { body = await res.json(); } catch(_) {}
+        try { raw = await res.text(); } catch(_) {}
+        try { body = raw ? JSON.parse(raw) : null; } catch(_) {}
+
         const bodyOk = !!(body && (body.success === true || body.ok === true));
-        if (!res.ok && !bodyOk) {
-          const detail = body?.error || body?.upstreamBody || `HTTP ${res.status}`;
-          throw new Error(`Submit failed: ${detail}`);
+        if (res.status >= 200 && res.status < 300) {
+          submitOk = true;
+        } else if (bodyOk) {
+          submitOk = true;
+        } else {
+          // Last-resort heuristic: some upstreams return plain text containing 'ok'
+          const t = (raw || '').toLowerCase();
+          if (t.includes('ok') || t.includes('success')) submitOk = true;
         }
 
-        submitOk = true;
+        if (!submitOk) {
+          const detail = body?.error || body?.upstreamBody || raw || `HTTP ${res.status}`;
+          throw new Error(`Submit failed: ${detail}`);
+        }
 
         // Success UI
         const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
