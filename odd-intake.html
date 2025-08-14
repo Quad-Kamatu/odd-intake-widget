@@ -217,16 +217,13 @@
   let __lastHeight = 0;
   function measureHeight(){
     const root = document.querySelector('.max-w-4xl');
-    const d = document.documentElement;
-    const b = document.body;
-    const pad = 16;
-    const candidates = [];
     if (root){
       const rect = root.getBoundingClientRect();
-      candidates.push(Math.ceil(rect.height) + pad);
-      candidates.push((root.scrollHeight||0) + pad);
-      candidates.push((root.offsetHeight||0) + pad);
+      return Math.ceil(rect.bottom + 8);
     }
+    const d = document.documentElement;
+    return Math.ceil((d && d.getBoundingClientRect().bottom) || 0);
+  }
     candidates.push(d?.scrollHeight||0, b?.scrollHeight||0, d?.offsetHeight||0, b?.offsetHeight||0, d?.clientHeight||0, b?.clientHeight||0);
     const px = Math.max(...candidates.filter(n=>Number.isFinite(n)), 320);
     return px;
@@ -240,9 +237,10 @@
         postHeights(px);
         if (burst){
           requestAnimationFrame(()=>sendHeight(false));
-          setTimeout(()=>sendHeight(false), 80);
-          setTimeout(()=>sendHeight(false), 240);
-          setTimeout(()=>sendHeight(false), 800);
+          setTimeout(()=>sendHeight(false), 60);
+          setTimeout(()=>sendHeight(false), 180);
+          setTimeout(()=>sendHeight(false), 500);
+          setTimeout(()=>sendHeight(false), 1000);
         }
       }
     }catch(_){/*noop*/}
