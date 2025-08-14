@@ -101,7 +101,7 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
+            <!-- discount badge removed by request -->
           </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
@@ -171,7 +171,7 @@
           <div>
             <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
             <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" /> Yes</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" checked /> Yes</label>
               <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
             </div>
           </div>
@@ -200,8 +200,6 @@
   const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
 
   // -------- HEIGHT MESSAGING --------
-  const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
-
   function postHeights(px){
     try{
       const ts = Date.now();
@@ -267,7 +265,7 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
+  // discount badge feature removed
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -580,7 +578,7 @@
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); updateDiscountBadge(); debouncedSendHeight(); }); }
+    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); debouncedSendHeight(); }); }
 
     return wrap;
   }
@@ -689,6 +687,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
+    // Ensure mailing list defaults to YES if nothing chosen
+    try {
+      const yes = document.querySelector('input[name="mailing"][value="yes"]');
+      const anyChecked = document.querySelector('input[name="mailing"]:checked');
+      if (yes && !anyChecked) yes.checked = true;
+    } catch(_) {}
+
     // 1) Load catalog or show fatal
     try{
       const ok = await loadCatalog();
@@ -707,10 +712,9 @@
     setTimeout(()=>sendHeight(true), 360);
     setTimeout(()=>sendHeight(true), 1000);
     if (document.fonts && document.fonts.ready) {
-      try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){}
-    }
+      try { document.fonts.ready.then(()=>sendHeight(true)).catch(()=>{}); } catch(_){}}
 
-    // 3) Height observers → Wix → Wix
+    // 3) Height observers → Wix
     try{
       if (window.ResizeObserver){
         const ro = new ResizeObserver(()=>debouncedSendHeight());
@@ -730,8 +734,8 @@
       setTimeout(()=>sendHeight(true), 0);
     }catch(e){ /* noop */ }
 
-    // 4) Discount listeners
-    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
+    // 4) Discount listeners (badge removed)
+    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
     // 5) Add another service
     document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
@@ -756,6 +760,8 @@
         btn.classList.remove('btn-primary');
         btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
       }
+
+      let submitOk = false;
 
       // Build payload
       const primary = state.services[0] || {};
@@ -810,6 +816,8 @@
           throw new Error(`Submit failed: ${detail}`);
         }
 
+        submitOk = true;
+
         // Success UI
         const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
         const form = document.getElementById('intakeForm'); if (form) form.style.display = 'none';
@@ -832,10 +840,18 @@
       } finally {
         if (btn){
           btn.dataset.loading = '0';
-          btn.disabled = true;
-          btn.classList.add('btn-disabled');
-          btn.classList.remove('btn-primary','btn-loading');
-          btn.textContent = 'Submit Request';
+          btn.classList.remove('btn-loading');
+          if (!submitOk) {
+            btn.disabled = false;
+            btn.classList.remove('btn-disabled');
+            btn.classList.add('btn-primary');
+            btn.textContent = 'Submit Request';
+          } else {
+            btn.disabled = true;
+            btn.classList.add('btn-disabled');
+            btn.classList.remove('btn-primary');
+            btn.textContent = 'Submit Request';
+          }
         }
         updateSubmitState();
         postHeights(measureHeight());
