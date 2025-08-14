@@ -745,7 +745,7 @@
         btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
       }
 
-      // Build payload (unchanged structure)
+      // Build payload
       const primary = state.services[0] || {};
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {};
       const unit = meta.priceUnit || 'flat';
@@ -759,15 +759,9 @@
         mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
         requestedProviders: document.getElementById('requestedProviders')?.value || '',
-
-        // Full services detail (array of every service card)
         services: state.services,
-
-        // Totals & breakdown
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-
-        // Primary service summary
         primaryDateTime: combineDateTime(primary.date, primary.time),
         primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
         primaryVenue: primary.location || '',
@@ -776,8 +770,7 @@
         needsAudioRecording: (!!meta.showAudioOption)
           ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
           : '',
-
-        // Legacy mirrors
+        // Legacy mirrors for upstreams
         date: primary.date || '',
         time: primary.time || '',
         endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
@@ -796,7 +789,7 @@
           body: JSON.stringify(payload)
         });
 
-        // Accept success by HTTP status OR JSON body { success:true | ok:true }
+        // Consider success if HTTP is 2xx OR response body says ok/success
         let body = null;
         try { body = await res.json(); } catch(_) {}
         const bodyOk = !!(body && (body.success === true || body.ok === true));
@@ -807,7 +800,7 @@
 
         // Success UI
         const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
-        document.getElementById('intakeForm').style.display = 'none';
+        const form = document.getElementById('intakeForm'); if (form) form.style.display = 'none';
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
@@ -834,78 +827,6 @@
         }
         updateSubmitState();
         postHeights(measureHeight());
-      }
-    });
-      const btn = document.getElementById('submitBtn');
-      if (btn && btn.dataset.loading === '1') return;
-      if (!e.target.checkValidity()){ updateSubmitState(); return; }
-
-      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
-
-      const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
-      const payload = {
-        firstName: document.getElementById('firstNameInput').value,
-        lastName: document.getElementById('lastNameInput').value,
-        email: document.getElementById('emailInput').value.trim().toLowerCase(),
-        organizationName: document.getElementById('orgInput')?.value || '',
-        discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
-        discountAppliedPercent: bestDiscountPercent(),
-        mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
-        additionalInfo: document.getElementById('additionalInfo')?.value || '',
-        requestedProviders: document.getElementById('requestedProviders')?.value || '',
-
-        // Full services detail (array of every service card)
-        services: state.services,
-
-        // Totals & breakdown
-        quoteTotal: document.getElementById('quoteTotal').textContent,
-        quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
-
-        // Primary service summary (new fields)
-        primaryDateTime: combineDateTime(primary.date, primary.time),
-        primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
-        primaryVenue: primary.location || '',
-        primaryServiceType: meta.subType || '',
-        primaryIsEvent: !!meta.isEvent,
-        needsAudioRecording: (!!meta.showAudioOption)
-          ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
-          : '',
-
-        // --- Legacy mirror fields for Apps Script/Discord -----
-        // (kept for backward compatibility so upstreams that expect
-        // simple top-level keys still work)
-        date: primary.date || '',
-        time: primary.time || '',
-        endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
-        location: primary.location || '',
-        serviceType: meta.subType || '',
-        audioRecording: (!!meta.showAudioOption)
-          ? (primary.audio==='yes' ? 'Yes' : (primary.audio==='no' ? 'No' : ''))
-          : ''
-      };
-
-      try{
-        const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-        const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
-
-        // Hide identity and form, show success
-        const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
-        document.getElementById('intakeForm').style.display = 'none';
-        const success = document.getElementById('successScreen');
-        if (success){
-          const who = document.getElementById('firstNameInput')?.value || 'Thank you';
-          document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
-          success.style.display = '';
-        }
-        const nowH = measureHeight();
-        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
-        postHeights(nowH); const _int = setInterval(()=>postHeights(measureHeight()), 200); setTimeout(()=>clearInterval(_int), 2000);
-      }catch(err){ console.error(err); alert('Sorry, something went wrong sending your request. Please try again.'); }
-      finally{
-        if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
-        updateSubmitState(); postHeights(measureHeight());
       }
     });
 
