@@ -219,7 +219,6 @@
     const pad = 12;
     if (root){
       const rect = root.getBoundingClientRect();
-      // Consider several strategies and take the max to avoid under-measuring
       const h1 = Math.ceil(rect.height + pad);
       const h2 = Math.ceil(root.scrollHeight + pad);
       const h3 = Math.ceil(document.documentElement.scrollHeight || 0);
@@ -509,7 +508,7 @@
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
       if (!meta){ resetServiceUI(); updateSubmitState(); debouncedSendHeight(); return; }
 
-      // Basic flags
+      // Basic flags (use CMS only)
       const unit = meta.priceUnit || 'flat';
       const isEvent = !!meta.isEvent;
 
@@ -534,7 +533,7 @@
       // Complexity
       renderComplexity(meta);
 
-      // Audio
+      // Audio (CMS-driven)
       const showAudio = !!meta.showAudioOption;
       wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
@@ -767,6 +766,8 @@
         const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 
+        // Hide identity and form, show success
+        const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
         document.getElementById('intakeForm').style.display = 'none';
         const success = document.getElementById('successScreen');
         if (success){
