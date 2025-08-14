@@ -736,6 +736,110 @@
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
+      // Spinner state
+      if (btn){
+        btn.dataset.loading = '1';
+        btn.disabled = true;
+        btn.classList.add('btn-disabled','btn-loading');
+        btn.classList.remove('btn-primary');
+        btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>';
+      }
+
+      // Build payload (unchanged structure)
+      const primary = state.services[0] || {};
+      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {};
+      const unit = meta.priceUnit || 'flat';
+      const payload = {
+        firstName: document.getElementById('firstNameInput').value,
+        lastName: document.getElementById('lastNameInput').value,
+        email: document.getElementById('emailInput').value.trim().toLowerCase(),
+        organizationName: document.getElementById('orgInput')?.value || '',
+        discountCategory: (document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'),
+        discountAppliedPercent: bestDiscountPercent(),
+        mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
+        additionalInfo: document.getElementById('additionalInfo')?.value || '',
+        requestedProviders: document.getElementById('requestedProviders')?.value || '',
+
+        // Full services detail (array of every service card)
+        services: state.services,
+
+        // Totals & breakdown
+        quoteTotal: document.getElementById('quoteTotal').textContent,
+        quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
+
+        // Primary service summary
+        primaryDateTime: combineDateTime(primary.date, primary.time),
+        primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
+        primaryVenue: primary.location || '',
+        primaryServiceType: meta.subType || '',
+        primaryIsEvent: !!meta.isEvent,
+        needsAudioRecording: (!!meta.showAudioOption)
+          ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : ''))
+          : '',
+
+        // Legacy mirrors
+        date: primary.date || '',
+        time: primary.time || '',
+        endTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
+        location: primary.location || '',
+        serviceType: meta.subType || '',
+        audioRecording: (!!meta.showAudioOption)
+          ? (primary.audio==='yes' ? 'Yes' : (primary.audio==='no' ? 'No' : ''))
+          : ''
+      };
+
+      try{
+        const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
+        const res = await fetch(url, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        // Accept success by HTTP status OR JSON body { success:true | ok:true }
+        let body = null;
+        try { body = await res.json(); } catch(_) {}
+        const bodyOk = !!(body && (body.success === true || body.ok === true));
+        if (!res.ok && !bodyOk) {
+          const detail = body?.error || body?.upstreamBody || `HTTP ${res.status}`;
+          throw new Error(`Submit failed: ${detail}`);
+        }
+
+        // Success UI
+        const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
+        document.getElementById('intakeForm').style.display = 'none';
+        const success = document.getElementById('successScreen');
+        if (success){
+          const who = document.getElementById('firstNameInput')?.value || 'Thank you';
+          document.getElementById('successRef').textContent = new Date().toLocaleString();
+          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
+          success.style.display = '';
+        }
+        const nowH = measureHeight();
+        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
+        postHeights(nowH);
+        const _int = setInterval(()=>postHeights(measureHeight()), 200);
+        setTimeout(()=>clearInterval(_int), 2000);
+
+      }catch(err){
+        console.error('[submit] error', err);
+        alert('Sorry, something went wrong sending your request. Please try again.');
+      } finally {
+        if (btn){
+          btn.dataset.loading = '0';
+          btn.disabled = true;
+          btn.classList.add('btn-disabled');
+          btn.classList.remove('btn-primary','btn-loading');
+          btn.textContent = 'Submit Request';
+        }
+        updateSubmitState();
+        postHeights(measureHeight());
+      }
+    });
+      const btn = document.getElementById('submitBtn');
+      if (btn && btn.dataset.loading === '1') return;
+      if (!e.target.checkValidity()){ updateSubmitState(); return; }
+
       if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
 
       const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
