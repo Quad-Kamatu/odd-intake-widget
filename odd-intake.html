@@ -26,7 +26,6 @@
     .btn-primary, .btn-primary:link, .btn-primary:visited{ background:#FF9D76 !important; border-color:#FF9D76 !important; color:#fff !important; }
     .btn-primary:hover, .btn-primary:focus, .btn-primary:focus-visible, .btn-primary:active{ background:#76F1FF !important; border-color:#76F1FF !important; color:#111 !important; }
     .btn-disabled{ background:#e5e7eb; border-color:#d1d5db; color:#9ca3af; cursor:not-allowed; }
-    .badge{ display:inline-block; border-radius:9999px; font-size:.85rem; padding:6px 10px; border:1px solid #ccc; background:#f3f3f3; color:#111; }
     .mono{ font-variant-numeric: tabular-nums; }
     a.link{ color:#111; text-decoration:underline; }
     .service-card{ border:1px dashed #e5e7eb; border-radius:16px; padding:16px; }
@@ -54,7 +53,17 @@
       <h1 class="text-2xl font-semibold page-title">Service Request</h1>
     </div>
 
-    <div id="identityCard" class="card">
+    <!-- Loading screen (visible first to avoid 0px iframe) -->
+    <div id="loadingScreen" class="card bg-white border border-gray-200">
+      <div class="flex items-center gap-3">
+        <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg>
+        <div class="font-semibold">Loading services…</div>
+      </div>
+      <div class="text-sm text-gray-600 mt-2">This should only take a moment.</div>
+    </div>
+
+    <!-- Identity & Discounts (hidden until catalog is ready) -->
+    <div id="identityCard" class="card" style="display:none;">
       <div class="grid md:grid-cols-2 gap-4">
         <div class="space-y-4">
           <div class="lbl">Your Info</div>
@@ -92,7 +101,8 @@
       </div>
     </div>
 
-    <form id="intakeForm" class="space-y-6" novalidate>
+    <!-- Services Form (hidden until catalog is ready) -->
+    <form id="intakeForm" class="space-y-6" novalidate style="display:none;">
       <div id="servicesContainer" class="space-y-6"></div>
 
       <div class="card bg-white border border-gray-200">
@@ -168,9 +178,9 @@
       const ts = Date.now();
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
       const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){ (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage(msgStd, origin); }catch(_){}
-        try{ window.parent.postMessage(msgLegacy, origin); }catch(_){} }); }
-    }catch(_){}
+      if (window.parent){ (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage(msgStd, origin); }catch(_){ }
+        try{ window.parent.postMessage(msgLegacy, origin); }catch(_){ } }); }
+    }catch(_){ }
   }
   let __lastHeight = 0;
   function measureHeight(){
@@ -190,7 +200,7 @@
         __lastHeight = px; postHeights(px);
         if (burst){ requestAnimationFrame(()=>sendHeight(false)); setTimeout(()=>sendHeight(false), 120); setTimeout(()=>sendHeight(false), 360); }
       }
-    }catch(_){}
+    }catch(_){ }
   }
   function debounce(fn, wait=80){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
   const debouncedSendHeight = debounce(()=>sendHeight(true), 80);
@@ -204,6 +214,10 @@
   function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
   function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
   function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
+
+  // Small helpers to show/hide blocks cleanly
+  function show(el){ if (el) el.style.display = ''; }
+  function hide(el){ if (el) el.style.display = 'none'; }
 
   // -------- STATE --------
   const state = { services: [] };
@@ -243,7 +257,7 @@
           with your request while we resolve this.
         </p>
       </div>`;
-    try { const h = measureHeight(); postHeights(h); setTimeout(()=>postHeights(measureHeight()), 200); } catch(_){}
+    try { const h = measureHeight(); postHeights(h); setTimeout(()=>postHeights(measureHeight()), 200); } catch(_){ }
   }
 
   // -------- SERVICE CARD --------
@@ -341,13 +355,13 @@
       const filmEl=wrap.querySelector('.filmSlider'); if(filmEl){ filmEl.value=1; updateSliderFill(filmEl); }
       const help=wrap.querySelector('.help'); if(help) help.textContent='';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-      const hide = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
-      hide('.addonsWrap'); wrap.querySelector('.addonsList').innerHTML='';
-      hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
+      const hideIt = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
+      hideIt('.addonsWrap'); wrap.querySelector('.addonsList').innerHTML='';
+      hideIt('.complexityWrap'); hideIt('.filmLenWrap'); hideIt('.qtyRow'); hideIt('.headshotRow');
       const dateEl=wrap.querySelector('.date'); if(dateEl){ dateEl.value=''; dateEl.required=false; }
       const timeEl=wrap.querySelector('.time'); if(timeEl){ timeEl.value=''; timeEl.required=false; }
       const locEl=wrap.querySelector('.location'); if(locEl){ locEl.value=''; locEl.required=false; }
-      hide('.eventRow'); hide('.locationRow');
+      hideIt('.eventRow'); hideIt('.locationRow');
     }
 
     function refreshSubs(){
@@ -609,12 +623,24 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
+    // Initial height ping for loading screen (prevents 0px iframe)
+    sendHeight(true);
+
+    // Try to load the catalog
     try{
       const ok = await loadCatalog();
       if (!ok || !CONFIG.catalog) throw new Error('Catalog failed');
     }catch(err){ console.error('Catalog load failed', err); renderFatal('Our system can\'t load the services catalog right now.'); return; }
 
+    // Build the primary service while loader is still visible (for faster first height)
     addServiceCard(true);
+
+    // Swap: hide loader, show the form & identity once we have the first card
+    hide(document.getElementById('loadingScreen'));
+    show(document.getElementById('identityCard'));
+    show(document.getElementById('intakeForm'));
+
+    // Burst heights so parent locks to final size promptly
     sendHeight(true);
     setTimeout(()=>sendHeight(true), 120);
     setTimeout(()=>sendHeight(true), 360);
@@ -630,14 +656,13 @@
         const succ = document.getElementById('successScreen'); if (succ) ro.observe(succ);
       }
       window.addEventListener('load', ()=>sendHeight(true));
-      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>8000) clearInterval(t); }, 300); })();
+      (function(){ const start=Date.now(); const t=setInterval(()=>{ sendHeight(true); if (Date.now()-start>6000) clearInterval(t); }, 300); })();
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       document.addEventListener('click', debouncedSendHeight);
       window.addEventListener('resize', debouncedSendHeight);
-      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true}); }catch(_){}
-      setTimeout(()=>sendHeight(true), 0);
-    }catch(e){}
+      try{ const mo=new MutationObserver(()=>debouncedSendHeight()); mo.observe(document.body,{childList:true,subtree:true}); }catch(_){ }
+    }catch(e){ }
 
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
@@ -690,15 +715,15 @@
       try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
         const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-        let body = null; try { body = await res.json(); } catch(_) {}
+        let body = null; try { body = await res.json(); } catch(_) { }
         const bodyOk = !!(body && (body.success === true || body.ok === true));
         if (!res.ok && !bodyOk) { const detail = body?.error || body?.upstreamBody || `HTTP ${res.status}`; throw new Error(`Submit failed: ${detail}`); }
 
-        const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
-        const form = document.getElementById('intakeForm'); if (form) form.style.display = 'none';
+        hide(document.getElementById('identityCard'));
+        hide(document.getElementById('intakeForm'));
         const success = document.getElementById('successScreen');
-        if (success){ const who = document.getElementById('firstNameInput')?.value || 'Thank you'; document.getElementById('successRef').textContent = new Date().toLocaleString(); success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`; success.style.display = ''; }
-        const nowH = measureHeight(); (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){} }); postHeights(nowH);
+        if (success){ const who = document.getElementById('firstNameInput')?.value || 'Thank you'; document.getElementById('successRef').textContent = new Date().toLocaleString(); success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`; show(success); }
+        const nowH = measureHeight(); (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){ } }); postHeights(nowH);
         const _int = setInterval(()=>postHeights(measureHeight()), 200); setTimeout(()=>clearInterval(_int), 2000);
       }catch(err){ console.error('[submit] error', err); alert('Sorry, something went wrong sending your request. Please try again.'); }
       finally{ if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
@@ -706,7 +731,6 @@
     });
 
     updateSubmitState();
-    sendHeight(true);
   });
   </script>
 </body>
