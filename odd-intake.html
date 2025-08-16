@@ -200,28 +200,120 @@
 
   // -------- HEIGHT MESSAGING --------
   
-function postHeights(px){
-  try{
+// ==== ODD HEIGHT PROTOCOL v3 (child/widget) ====
+(function(){
+  const HP = {
+    childId: String(Math.random()).slice(2),
+    ready: false,
+    successMode: false,
+    last: 0,
+    lastSentAt: 0,
+    rafId: 0,
+    pingTimer: 0
+  };
+
+  function _emit(to, msg){
+    try{ window.parent && window.parent.postMessage(msg, to); }catch(_){/*noop*/}
+  }
+
+  function emitHeight(px, reason){
+    const h = Math.max(0, Math.round(Number(px)||0));
+    if (!h) return;
     const ts = Date.now();
-    const msgStd    = { type:'ODD_FORM_HEIGHT', height:px, ts };
-    const msgLegacy = { oddIntakeHeight: px, ts };
-    if (window.parent){
-      // Allowed origins (production)
-      (ALLOWED_PARENTS||[]).forEach(origin=>{
-        try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
-        try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
-      });
-      // Fallback broadcast (Editors/Previews/unknown wrappers)
-      try{ window.parent.postMessage(msgStd, '*'); }catch(_){/*noop*/}
-      try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){/*noop*/}
+    HP.last = h; HP.lastSentAt = ts;
+
+    const std = { type:'ODD_FORM_HEIGHT', height:h, ts, childId: HP.childId, reason };
+    const leg = { oddIntakeHeight: h, ts, childId: HP.childId, reason };
+    const v3  = { type:'ODD_HEIGHT_V3', height:h, ts, childId: HP.childId, reason };
+
+    (ALLOWED_PARENTS||[]).forEach(origin=>{ _emit(origin, std); _emit(origin, leg); _emit(origin, v3); });
+    _emit('*', std); _emit('*', leg); _emit('*', v3);
+  }
+
+  // Back-compat wrapper used elsewhere in code
+  window.postHeights = function(px){ emitHeight(px, 'call'); };
+
+  function measure(){
+    const html = document.documentElement;
+    const body = document.body;
+    // If success card is visible and we're in success mode, measure it tightly with some padding.
+    const succ = document.getElementById('successScreen');
+    if (HP.successMode && succ && succ.offsetParent !== null){
+      const pad = 24;
+      return Math.ceil(succ.getBoundingClientRect().height + pad);
     }
-  }catch(_){/*noop*/}
-}
-;
-      const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent){
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try{ window.parent.postMessage(msgStd, origin); }catch(_){/*noop*/}
+    const h = Math.max(
+      body.scrollHeight, body.offsetHeight,
+      html.clientHeight, html.scrollHeight, html.offsetHeight
+    );
+    return h;
+  }
+
+  function send(reason){
+    emitHeight(measure(), reason);
+  }
+
+  // Handshake
+  function childReady(){
+    const msg = { type:'ODD_CHILD_READY', ts: Date.now(), childId: HP.childId };
+    (ALLOWED_PARENTS||[]).forEach(origin=>{ _emit(origin, msg); });
+    _emit('*', msg);
+  }
+
+  window.addEventListener('message', (e)=>{
+    const d = e && e.data || {};
+    if (d && d.type === 'ODD_HOST_READY'){
+      HP.ready = true;
+      send('host_ready');
+    } else if (d && d.type === 'ODD_REQUEST_HEIGHT'){
+      send('request');
+    } else if (d && d.type === 'ODD_HOST_SUCCESS_MODE'){
+      HP.successMode = true; // parent can force tight mode
+      send('host_forced_success_mode');
+    }
+  });
+
+  // Kick off recurring sends until layout is stable
+  function bootStrapLoop(){
+    let frames = 0;
+    const maxFrames = 240; // ~4s at 60fps
+    const threshold = 1;
+    let lastM = 0;
+    function step(){
+      frames++;
+      const m = measure();
+      if (Math.abs(m - lastM) > threshold){
+        lastM = m;
+        emitHeight(m, 'raf');
+      }
+      if (frames < maxFrames) HP.rafId = requestAnimationFrame(step);
+    }
+    HP.rafId = requestAnimationFrame(step);
+    // Safety net pings
+    clearInterval(HP.pingTimer);
+    HP.pingTimer = setInterval(()=> send('interval'), 500);
+    setTimeout(()=> clearInterval(HP.pingTimer), 6000);
+  }
+
+  // Observers
+  const ro = new ResizeObserver(()=> send('resizeObserver'));
+  try{ ro.observe(document.body); ro.observe(document.documentElement); }catch(_){}
+
+  const mo = new MutationObserver(()=> send('mutationObserver'));
+  try{ mo.observe(document.body, { childList:true, subtree:true, attributes:true, characterData:true }); }catch(_){}
+
+  window.addEventListener('load', ()=> send('window_load'));
+  if (document.fonts && document.fonts.ready){ document.fonts.ready.then(()=> send('fonts_ready')).catch(()=>{}); }
+  window.addEventListener('orientationchange', ()=> send('orientationchange'));
+
+  // Expose a helper for success mode switch
+  window.__oddEnterSuccessMode = function(){ HP.successMode = true; send('enter_success'); };
+
+  // Announce child ready and start loop
+  childReady();
+  bootStrapLoop();
+})();
+// ==== END ODD HEIGHT PROTOCOL v3 ====
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
         });
       }
@@ -843,6 +935,7 @@ const __header = document.getElementById('pageHeader'); if(__header) __header.re
           document.getElementById('successRef').textContent = new Date().toLocaleString();
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
+if (window.__oddEnterSuccessMode) window.__oddEnterSuccessMode();
 
 // Measure just the success card with padding and notify parent
 (function(){
