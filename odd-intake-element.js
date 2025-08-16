@@ -20,6 +20,44 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
     shadow.appendChild(iframe);
 
+// ==== ODD HEIGHT PROTOCOL v3 (host/parent element) ====
+let __oddChildReady = false;
+let __oddReqTimer = 0;
+let __oddLastHeight = 0;
+
+function _hostEmit(msg){
+  try{ iframe && iframe.contentWindow && iframe.contentWindow.postMessage(msg, '*'); }catch(_){/*noop*/}
+}
+
+function _requestHeight(reason){
+  _hostEmit({ type:'ODD_REQUEST_HEIGHT', ts: Date.now(), reason });
+}
+
+function _hostReady(){
+  _hostEmit({ type:'ODD_HOST_READY', ts: Date.now() });
+}
+
+function _successMode(){
+  __oddSuccessMode = true;
+  _hostEmit({ type:'ODD_HOST_SUCCESS_MODE', ts: Date.now() });
+}
+
+// Upon iframe load, start handshake & polling until child confirms ready.
+iframe.addEventListener('load', ()=>{
+  __oddChildReady = false;
+  let attempts = 0;
+  clearInterval(__oddReqTimer);
+  _hostReady();
+  __oddReqTimer = setInterval(()=>{
+    attempts++;
+    _hostReady();
+    _requestHeight('poll');
+    if (attempts > 40 || __oddChildReady){ clearInterval(__oddReqTimer); }
+  }, 250);
+});
+// ==== END ODD HEIGHT PROTOCOL v3 ====
+
+
     // Smoothly apply height changes (guards against jitter)
     let lastApplied = 0;
     let applyTimer = null;
@@ -40,6 +78,7 @@ const applyHeight = (h) => {
 
     // Receive height from the form and resize the element
     window.addEventListener('message', (e) => {
+      const now = Date.now();
       const data = e?.data || {};
 
       // Accept both new and legacy height message formats
@@ -50,12 +89,15 @@ const applyHeight = (h) => {
         } else if (typeof data.oddIntakeHeight === 'number') {
           h = data.oddIntakeHeight;
         } else if (data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') {
+          __oddSuccessMode = true; _successMode();
           __oddSuccessMode = true;
           // success screen often has a different height
           h = data.height;
         }
       }
 
+      if (data && data.type === 'ODD_CHILD_READY'){ __oddChildReady = true; _requestHeight('ack_ready'); }
+      if (data && data.type === 'ODD_HEIGHT_V3' && typeof data.height === 'number'){ h = data.height; }
       if (h != null) applyHeight(h);
     });
   }
