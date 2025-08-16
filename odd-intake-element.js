@@ -6,6 +6,11 @@ class OddIntakeElement extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' });
 
     // Config
+    
+    const debug = (this.getAttribute('data-odd-debug') === '1') ||
+                  ((this.getAttribute('src')||'').includes('oddDebug=1'));
+    function dlog(...a){ if(debug) try{ console.log('[odd-intake-element]', ...a);}catch(_){ } }
+
     const minHAttr = Number(this.getAttribute('min-height')) || 320;
 
     
@@ -47,6 +52,17 @@ iframe.addEventListener('load', ()=>{
   __oddChildReady = false;
   let attempts = 0;
   clearInterval(__oddReqTimer);
+// Fail-safe: if we don't receive any height soon, auto-grow every 300ms up to 2000px
+clearInterval(__oddFailSafeTimer);
+let step = Math.max(minHAttr, 320);
+__oddFailSafeTimer = setInterval(()=>{
+  if (__oddGotHeight){ clearInterval(__oddFailSafeTimer); return; }
+  step = Math.min(step + 200, 2000);
+  dlog('failsafe grow', step);
+  iframe.style.height = step + 'px';
+  lastApplied = step;
+}, 300);
+
   _hostReady();
   __oddReqTimer = setInterval(()=>{
     attempts++;
@@ -61,12 +77,14 @@ iframe.addEventListener('load', ()=>{
     // Smoothly apply height changes (guards against jitter)
     let lastApplied = 0;
     let applyTimer = null;
+    let __oddGotHeight = false;
+    let __oddFailSafeTimer = 0;
     
 const applyHeight = (h) => {
   const target = Math.round(Number(h) || 0);
   if (!target || Math.abs(target - lastApplied) < 1) return;
   const px = __oddSuccessMode ? target : Math.max(minHAttr, target);
-  lastApplied = px;
+  lastApplied = px; __oddGotHeight = true; dlog('applyHeight', px);
   iframe.style.height = `${px}px`;
   clearTimeout(applyTimer);
   applyTimer = setTimeout(() => {
@@ -96,7 +114,7 @@ const applyHeight = (h) => {
         }
       }
 
-      if (data && data.type === 'ODD_CHILD_READY'){ __oddChildReady = true; _requestHeight('ack_ready'); }
+      if (data && data.type === 'ODD_CHILD_READY'){ __oddChildReady = true; clearInterval(__oddFailSafeTimer); _requestHeight('ack_ready'); }
       if (data && data.type === 'ODD_HEIGHT_V3' && typeof data.height === 'number'){ h = data.height; }
       if (h != null) applyHeight(h);
     });
