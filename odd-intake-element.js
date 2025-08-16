@@ -15,7 +15,7 @@ class OddIntakeElement extends HTMLElement {
     const iframe = document.createElement('iframe');
     iframe.src = this.getAttribute('src') || '';
     iframe.style.width = '100%';
-    iframe.style.height = `${minHAttr}px`;
+      iframe.style.height = `${minHAttr}px`;
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
@@ -78,4 +78,9 @@ px`;
     }
   }
 }
-customElements.define('odd-intake', OddIntakeElement);
+
+// Dual registration to avoid tag mismatch issues in Wix
+if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
+if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
+if (!customElements.get('odd-intake-element')) customElements.define('odd-intake-element', OddIntakeElement);
+
