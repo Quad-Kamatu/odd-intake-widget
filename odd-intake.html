@@ -246,12 +246,13 @@
   function measure(){
     const html = document.documentElement;
     const body = document.body;
-    // If success card is visible and we're in success mode, measure it tightly with some padding.
+    const root = document.getElementById('widgetRoot') || document.querySelector('.page') || body;
     const succ = document.getElementById('successScreen');
     if (HP.successMode && succ && succ.offsetParent !== null){
       const pad = 24;
       return Math.ceil(succ.getBoundingClientRect().height + pad);
     }
+    try { return Math.ceil(root.getBoundingClientRect().height); } catch(_){ }
     const h = Math.max(
       body.scrollHeight, body.offsetHeight,
       html.clientHeight, html.scrollHeight, html.offsetHeight
@@ -328,6 +329,39 @@
   bootStrapLoop();
   /*__ODD_V5_ADAMANT__*/ HP.adamant = setInterval(()=>{ try{ if(HP.hardMode && window.frameElement && window.frameElement.style){ window.frameElement.style.height = measure() + 'px'; } }catch(_){} }, 7000);
 })();
+
+// ---- RPC: Parent fetch fallback (avoids CORS when child is cross-origin) ----
+(function(){
+  const pending = new Map(); // id -> {resolve,reject,timeout}
+  let seq = 1;
+  function requestParentFetch(input, init){
+    return new Promise((resolve, reject)=>{
+      const id = 'f' + (seq++);
+      const timeout = setTimeout(()=>{ pending.delete(id); reject(new Error('Parent fetch timeout')); }, 8000);
+      pending.set(id, { resolve, reject, timeout });
+      try{
+        window.parent && window.parent.postMessage({ type:'ODD_FETCH', id, input, init }, '*');
+      }catch(e){ clearTimeout(timeout); pending.delete(id); reject(e); }
+    });
+  }
+  window.addEventListener('message', (e)=>{
+    const d = e && e.data || {};
+    if (!d || d.type !== 'ODD_FETCH_RESULT' || !d.id) return;
+    const p = pending.get(d.id);
+    if (!p) return;
+    clearTimeout(p.timeout);
+    pending.delete(d.id);
+    if (d.error) { p.reject(new Error(d.error)); return; }
+    try {
+      // Support JSON or text
+      if (d.kind === 'json') p.resolve(d.body);
+      else p.resolve(d.body);
+    } catch(err){ p.reject(err); }
+  });
+  // expose globally
+  window.__oddParentFetch = requestParentFetch;
+})();
+
 // ==== END ODD HEIGHT PROTOCOL v3 ====
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
         });
@@ -392,6 +426,32 @@
   // -------- CATALOG LOADER --------
   async function loadCatalog(){
     const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
+    // Attempt direct fetch first
+    try{
+      const res = await fetch(url, { headers:{ 'Content-Type':'application/json' } });
+      if (res && res.ok){
+        const data = await res.json();
+        const { services = [], pricing = [], addons = [] } = data || {};
+        if (!services.length || !pricing.length) throw new Error('Empty catalog');
+        CONFIG.catalog = { services, pricing, addons };
+        return true;
+      }
+      throw new Error('HTTP ' + (res && res.status));
+    }catch(directErr){
+      // Fallback to parent fetch (same-origin to Wix) to avoid CORS
+      try{
+        const data = await (window.__oddParentFetch ? window.__oddParentFetch(url, { method:'GET' }) : Promise.reject(new Error('No parent fetch')));
+        const { services = [], pricing = [], addons = [] } = data || {};
+        if (!services.length || !pricing.length) throw new Error('Empty catalog');
+        CONFIG.catalog = { services, pricing, addons };
+        return true;
+      }catch(parentErr){
+        console.error('catalog error', directErr, parentErr);
+        renderFatal('Our services catalog is currently unavailable.');
+        return false;
+      }
+    }
+  }${CONFIG.api.catalogPath}`;
     const controller = new AbortController();
     const to = setTimeout(()=>controller.abort(), 8000);
     try{
@@ -938,8 +998,18 @@ try{
 }catch(_){}
 try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-        const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
+        let ok = false; let submitErr = null;
+        try{
+          const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+          ok = !!(res && res.ok);
+        }catch(e){ submitErr = e; }
+        if (!ok){
+          try{
+            const result = await (window.__oddParentFetch ? window.__oddParentFetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) }) : Promise.reject(new Error('No parent fetch')));
+            ok = true;
+          }catch(e2){ submitErr = submitErr || e2; }
+        }
+        if (!ok) throw new Error('Submit failed: ' + (submitErr && submitErr.message || 'unknown'));
 
         const __formEl = document.getElementById('intakeForm'); if(__formEl) __formEl.remove();
 const __idCard = document.getElementById('identityCard'); if(__idCard) __idCard.remove();
