@@ -100,7 +100,9 @@
           </div>
           <label class="block">
             <span class="lbl">Email *</span>
-            <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />          </label>
+            <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
+            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
+          </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
             <input id="orgInput" type="text" class="inp" placeholder="Organization (if applicable)" />
@@ -202,9 +204,10 @@
     try{
       const ts = Date.now();
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts 
-  try{ window.parent.postMessage(msgStd, '*'); }catch(_){/*noop*/}
-  try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){/*noop*/}
-};
+  try{ window.parent.postMessage(msgStd, '*'); }catch(_){}
+  try{ window.parent.postMessage(msgLegacy, '*'); }catch(_){}
+}
+;
       const msgLegacy = { oddIntakeHeight: px, ts };
       if (window.parent){
         (ALLOWED_PARENTS||[]).forEach(origin=>{
@@ -263,7 +266,7 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ /* badge removed */ }%`; } else { badge.classList.add('hidden'); } }
+  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -696,8 +699,6 @@
     btn.textContent = 'Complete required fields to submit';
   }
 }
-    else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
-  }
 
   function addServiceCard(isPrimary=false){
     const id = isPrimary ? 'primary' : uid();
@@ -758,25 +759,25 @@
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       
-  // Identity preflight validation (even if fields sit outside the <form>)
-  {
-    const first = document.getElementById('firstNameInput');
-    const last  = document.getElementById('lastNameInput');
-    const email = document.getElementById('emailInput');
-    const ok =
-      (!!first?.value?.trim()) &&
-      (!!last?.value?.trim())  &&
-      (!!email?.value?.trim()) && (email.checkValidity ? email.checkValidity() : true);
-    if (!ok){
-      updateSubmitState();
-      try{
-        if (!first?.value?.trim()) first.reportValidity();
-        else if (!last?.value?.trim()) last.reportValidity();
-        else if (!email?.value?.trim() || !email.checkValidity()) email.reportValidity();
-      }catch(_){}
-      return;
-    }
-  }
+      // Identity preflight (even if inputs sit outside the <form>)
+      {
+        const first = document.getElementById('firstNameInput');
+        const last  = document.getElementById('lastNameInput');
+        const email = document.getElementById('emailInput');
+        const ok =
+          (!!first?.value?.trim()) &&
+          (!!last?.value?.trim())  &&
+          (!!email?.value?.trim()) && (email.checkValidity ? email.checkValidity() : true);
+        if (!ok){
+          updateSubmitState();
+          try{
+            if (!first?.value?.trim()) first.reportValidity();
+            else if (!last?.value?.trim()) last.reportValidity();
+            else if (!email?.value?.trim() || !email.checkValidity()) email.reportValidity();
+          }catch(_){}
+          return;
+        }
+      }
 const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
@@ -805,17 +806,6 @@ const btn = document.getElementById('submitBtn');
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
-// Sanitize: drop hours for non-hourly; drop units for non-perMinute (except headshot)
-try{
-  if (payload && Array.isArray(payload.services)){
-    payload.services.forEach(svc=>{
-      const meta = (CONFIG?.catalog?.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-      const unit = meta?.priceUnit || '';
-      if (unit !== 'perHour' && 'hours' in svc) { delete svc.hours; }
-      if (unit !== 'perMinute' && 'units' in svc && !/headshot/i.test(meta?.subType||'')) { delete svc.units; }
-    });
-  }
-}catch(_){}
 
       try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
@@ -829,22 +819,23 @@ try{
           document.getElementById('successRef').textContent = new Date().toLocaleString();
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
-  // remove identity + header + form (tight success only)
-  document.getElementById('identityCard')?.remove();
-  document.getElementById('pageHeader')?.remove();
-  document.getElementById('intakeForm')?.remove();
-  // measure tight success height + padding and notify parent
-  (function(){
-    const pad = 24;
-    try{
-      const successH = Math.ceil(success.getBoundingClientRect().height + pad);
-      try { window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); } catch(_){}
-      postHeights(successH);
-      setTimeout(()=>postHeights(successH), 80);
-      setTimeout(()=>postHeights(Math.max(successH, (typeof measureHeight==='function')?measureHeight():successH)), 200);
-    }catch(_){}
-  })();
-        }}
+        
+          // Remove identity/header/form so success is the only visible block
+          document.getElementById('identityCard')?.remove();
+          document.getElementById('pageHeader')?.remove();
+          document.getElementById('intakeForm')?.remove();
+          // Tight success height (+24px padding) and inform host
+          try{
+            const pad = 24;
+            const successH = Math.ceil(success.getBoundingClientRect().height + pad);
+            try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); }catch(_){}
+            postHeights(successH);
+            setTimeout(()=>postHeights(successH), 80);
+            setTimeout(()=>postHeights(Math.max(successH, (typeof measureHeight==='function')?measureHeight():successH)), 200);
+          }catch(_){}
+}
+
+      }
     });
 
     updateSubmitState();
