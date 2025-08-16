@@ -101,6 +101,7 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
+            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
           </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
@@ -170,7 +171,7 @@
           <div>
             <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
             <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" / checked> Yes</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" /> Yes</label>
               <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
             </div>
           </div>
@@ -272,7 +273,7 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ /* badge removed */ }%`; } else { badge.classList.add('hidden'); } }
+  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -677,34 +678,11 @@
   }
 
   function updateSubmitState(){
-  const form = document.getElementById('intakeForm');
-  const btn  = document.getElementById('submitBtn');
-  if (!btn || !form) return;
-  if (btn && btn.dataset.loading==='1') return;
-
-  const first = document.getElementById('firstNameInput');
-  const last  = document.getElementById('lastNameInput');
-  const email = document.getElementById('emailInput');
-
-  const identityOk =
-    (!!first && !!first.value.trim()) &&
-    (!!last  && !!last.value.trim())  &&
-    (!!email && !!email.value.trim() && (email.checkValidity ? email.checkValidity() : true));
-
-  const valid = (form.checkValidity ? form.checkValidity() : true) && identityOk;
-
-  if (valid) {
-    btn.disabled = false;
-    btn.classList.remove('btn-disabled');
-    btn.classList.add('btn-primary');
-    btn.textContent = 'Submit Request';
-  } else {
-    btn.disabled = true;
-    btn.classList.add('btn-disabled');
-    btn.classList.remove('btn-primary');
-    btn.textContent = 'Complete required fields to submit';
-  }
-}
+    const form = document.getElementById('intakeForm');
+    const btn = document.getElementById('submitBtn');
+    if (btn && btn.dataset.loading==='1') return;
+    const valid = form.checkValidity();
+    if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
     else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
   }
 
@@ -766,26 +744,7 @@
     // 7) Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      
-  {
-    const first = document.getElementById('firstNameInput');
-    const last  = document.getElementById('lastNameInput');
-    const email = document.getElementById('emailInput');
-    const identityOk =
-      (!!first && !!first.value.trim()) &&
-      (!!last  && !!last.value.trim())  &&
-      (!!email && !!email.value.trim() && (email.checkValidity ? email.checkValidity() : true));
-    if (!identityOk){
-      updateSubmitState();
-      try{
-        if (!first?.value?.trim()) first.reportValidity();
-        else if (!last?.value?.trim()) last.reportValidity();
-        else if (!email?.value?.trim() || !email.checkValidity()) email.reportValidity();
-      }catch(_){}
-      return;
-    }
-  }
-const btn = document.getElementById('submitBtn');
+      const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
@@ -813,18 +772,6 @@ const btn = document.getElementById('submitBtn');
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
-// --- sanitize hours for non-hourly services ---
-try{
-  if (payload && Array.isArray(payload.services)){
-    payload.services.forEach(svc=>{
-      const meta = (CONFIG?.catalog?.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-      const unit = meta?.priceUnit || '';
-      if (unit !== 'perHour' && 'hours' in svc) { delete svc.hours; }
-      if (unit !== 'perMinute' && 'units' in svc && !/headshot/i.test(meta?.subType||'')) { delete svc.units; }
-    });
-  }
-}catch(_){}
-
 
       try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
@@ -838,19 +785,6 @@ try{
           document.getElementById('successRef').textContent = new Date().toLocaleString();
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
-const __id = document.getElementById('identityCard'); if (__id) __id.remove();
-const __hdr = document.getElementById('pageHeader'); if (__hdr) __hdr.remove();
-const __form = document.getElementById('intakeForm'); if (__form) __form.remove();
-(function(){
-  const success = document.getElementById('successScreen');
-  if (!success) return;
-  const pad = 24;
-  const successH = Math.ceil(success.getBoundingClientRect().height + pad);
-  try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); }catch(_){}
-  postHeights(successH);
-  setTimeout(()=>postHeights(successH), 80);
-  setTimeout(()=>postHeights(Math.max(successH, (typeof measureHeight==='function')?measureHeight():successH)), 200);
-})();
         }
         const nowH = measureHeight();
         (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
