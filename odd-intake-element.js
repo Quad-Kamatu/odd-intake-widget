@@ -1,14 +1,18 @@
 
 // odd-intake-element.js
 class OddIntakeElement extends HTMLElement {
+  // Ensure host participates in layout
+  // (Wix sometimes treats custom elements as inline and collapses height)
+
   constructor() {
+    // Host box must be block-level so the iframe height counts
+    this.style.display = 'block';
+    this.style.width = '100%';
     super();
     const shadow = this.attachShadow({ mode: 'open' });
 
     // Config
     const minHAttr = Number(this.getAttribute('min-height')) || 320;
-    const debug = this.getAttribute('data-odd-debug') === '1';
-    const dlog = (...a)=>{ if (debug) try{ console.log('[odd-intake-element]', ...a);}catch(_){}};
 
     // Create iframe to load your hosted form
     const iframe = document.createElement('iframe');
@@ -18,30 +22,27 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
-    shadow.appendChild(iframe);
+    
+    const style = document.createElement('style');
+    style.textContent = ':host{display:block} *,*::before,*::after{box-sizing:border-box}';
+    shadow.appendChild(style);
+shadow.appendChild(iframe);
 
     // Smoothly apply height changes (guards against jitter)
     let lastApplied = 0;
-    let __oddSuccessMode = false;
-    let __oddGotHeight = false;
     let applyTimer = null;
-    
     const applyHeight = (h) => {
-      const target = Math.round(Number(h) || 0);
-      if (!target) return;
-      const px = __oddSuccessMode ? target : Math.max(minHAttr, target);
-      if (Math.abs(px - lastApplied) < 1) return;
+      const px = Math.max(minHAttr, Math.round(Number(h) || 0));
+      if (!px || Math.abs(px - lastApplied) < 1) return;
       lastApplied = px;
       iframe.style.height = `${px}px`;
-      __oddGotHeight = true;
-      dlog('applyHeight', px);
+      // small delayed follow-up to catch late layout shifts
       clearTimeout(applyTimer);
       applyTimer = setTimeout(() => {
-        const again = __oddSuccessMode ? lastApplied : Math.max(minHAttr, lastApplied);
+        const again = Math.max(minHAttr, Math.round(Number(lastApplied)));
         iframe.style.height = `${again}px`;
       }, 120);
     };
-
 
     // Receive height from the form and resize the element
     window.addEventListener('message', (e) => {
@@ -60,7 +61,6 @@ class OddIntakeElement extends HTMLElement {
         }
       }
 
-      if (data && data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') { __oddSuccessMode = true; }
       if (h != null) applyHeight(h);
     });
   }
