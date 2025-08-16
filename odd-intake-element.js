@@ -1,11 +1,8 @@
 
 // odd-intake-element.js
 class OddIntakeElement extends HTMLElement {
-  // Ensure host participates in layout
-  // (Wix sometimes treats custom elements as inline and collapses height)
-
   constructor() {
-    // Host box must be block-level so the iframe height counts
+    // Ensure host participates in layout
     this.style.display = 'block';
     this.style.width = '100%';
     super();
@@ -18,15 +15,17 @@ class OddIntakeElement extends HTMLElement {
     const iframe = document.createElement('iframe');
     iframe.src = this.getAttribute('src') || '';
     iframe.style.width = '100%';
+      iframe.style.height = (this.getAttribute('min-height') || '320') + 'px';
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
-    
-    const style = document.createElement('style');
-    style.textContent = ':host{display:block} *,*::before,*::after{box-sizing:border-box}';
-    shadow.appendChild(style);
-shadow.appendChild(iframe);
+    shadow.appendChild(iframe);
+
+      // Backstop: ensure custom element is block-level
+      const __style = document.createElement('style');
+      __style.textContent=':host{display:block}';
+      shadow.appendChild(__style);
 
     // Smoothly apply height changes (guards against jitter)
     let lastApplied = 0;
@@ -73,4 +72,9 @@ shadow.appendChild(iframe);
     }
   }
 }
-customElements.define('odd-intake', OddIntakeElement);
+
+// Dual registration to cover either tag name
+if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
+if (!customElements.get('odd-intake-element')) customElements.define('odd-intake-element', OddIntakeElement);
+if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
+
