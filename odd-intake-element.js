@@ -2,9 +2,6 @@
 // odd-intake-element.js
 class OddIntakeElement extends HTMLElement {
   constructor() {
-    // Ensure host participates in layout
-    this.style.display = 'block';
-    this.style.width = '100%';
     super();
     const shadow = this.attachShadow({ mode: 'open' });
 
@@ -15,17 +12,11 @@ class OddIntakeElement extends HTMLElement {
     const iframe = document.createElement('iframe');
     iframe.src = this.getAttribute('src') || '';
     iframe.style.width = '100%';
-      iframe.style.height = (this.getAttribute('min-height') || '320') + 'px';
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
     shadow.appendChild(iframe);
-
-      // Backstop: ensure custom element is block-level
-      const __style = document.createElement('style');
-      __style.textContent=':host{display:block}';
-      shadow.appendChild(__style);
 
     // Smoothly apply height changes (guards against jitter)
     let lastApplied = 0;
@@ -72,9 +63,4 @@ class OddIntakeElement extends HTMLElement {
     }
   }
 }
-
-// Dual registration to cover either tag name
-if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
-if (!customElements.get('odd-intake-element')) customElements.define('odd-intake-element', OddIntakeElement);
-if (!customElements.get('odd-intake')) customElements.define('odd-intake', OddIntakeElement);
-
+customElements.define('odd-intake', OddIntakeElement);
