@@ -101,7 +101,7 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-            </label>
+</label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
             <input id="orgInput" type="text" class="inp" placeholder="Organization (if applicable)" />
@@ -261,7 +261,7 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
+  function updateDiscountBadge(){ const badge = document.getElementById('discountBadge'); if (badge) badge.remove(); }%`; } else { badge.classList.add('hidden'); } }
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -697,6 +697,9 @@
     addServiceCard(true);
     // Immediate height ping after first render
     sendHeight(true);
+    // Default “Yes” for mailing list (defensive)
+    (function(){ const mailYes = document.querySelector('input[name="mailing"][value="yes"]'); if (mailYes) mailYes.checked = true; })();
+
 
     // 3) Height observers → Wix
     try{
@@ -766,9 +769,9 @@
         const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 
-        document.getElementById('intakeForm').style.display = 'none';
-        const idc = document.getElementById('identityCard'); if (idc) idc.style.display = 'none';
-        const hdr = document.getElementById('pageHeader'); if (hdr) hdr.style.display = 'none';
+        const formEl = document.getElementById('intakeForm'); if (formEl) formEl.remove();
+        const idCard = document.getElementById('identityCard'); if (idCard) idCard.remove();
+        const header = document.getElementById('pageHeader'); if (header) header.remove();
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
@@ -776,20 +779,22 @@
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
         }
-        const nowH = measureHeight();
-        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
-        postHeights(nowH);
-        sendHeight(true);
-        requestAnimationFrame(()=>sendHeight(false));
-        setTimeout(()=>sendHeight(false), 150);
-        setTimeout(()=>sendHeight(false), 450);
-        setTimeout(()=>sendHeight(false), 900);
-        const _int = setInterval(()=>postHeights(measureHeight()), 250);
-        setTimeout(()=>clearInterval(_int), 2000);
+        const successEl = document.getElementById('successScreen');
+        const pad = 24;
+        const successH = Math.ceil((successEl?.getBoundingClientRect().height || 0) + pad);
+
+        (ALLOWED_PARENTS||[]).forEach(origin=>{ 
+          try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, origin); }catch(_){}
+        });
+
+        postHeights(successH);
+        setTimeout(()=>postHeights(successH), 80);
+        setTimeout(()=>postHeights(Math.max(successH, measureHeight())), 200);
+        window.__oddDidSuccessResize = true;
       }catch(err){ console.error(err); alert('Sorry, something went wrong sending your request. Please try again.'); }
       finally{
         if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
-        updateSubmitState(); postHeights(measureHeight());
+        updateSubmitState(); if (!window.__oddDidSuccessResize) { postHeights(measureHeight()); }
       }
     });
 
