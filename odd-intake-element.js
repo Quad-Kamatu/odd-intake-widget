@@ -7,10 +7,10 @@ class OddIntakeElement extends HTMLElement {
 
     // Config
     const minHAttr = Number(this.getAttribute('min-height')) || 320;
+
+    
     let __oddSuccessMode = false;
-
-
-    // Create iframe to load your hosted form
+// Create iframe to load your hosted form
     const iframe = document.createElement('iframe');
     iframe.src = this.getAttribute('src') || '';
     iframe.style.width = '100%';
@@ -24,21 +24,19 @@ class OddIntakeElement extends HTMLElement {
     let lastApplied = 0;
     let applyTimer = null;
     
-    const applyHeight = (h) => {
-      const target = Math.round(Number(h) || 0);
-      if (!target || Math.abs(target - lastApplied) < 1) return;
-      const px = __oddSuccessMode ? target : Math.max(minHAttr, target);
-      lastApplied = px;
-      iframe.style.height = `${px}px`;
-      // small delayed follow-up to catch late layout shifts
-      clearTimeout(applyTimer);
-      applyTimer = setTimeout(() => {
-        const againTarget = Math.round(Number(lastApplied) || 0);
-        const again = __oddSuccessMode ? againTarget : Math.max(minHAttr, againTarget);
-        iframe.style.height = `${again}px`;
-      }, 120);
-    };
-
+const applyHeight = (h) => {
+  const target = Math.round(Number(h) || 0);
+  if (!target || Math.abs(target - lastApplied) < 1) return;
+  const px = __oddSuccessMode ? target : Math.max(minHAttr, target);
+  lastApplied = px;
+  iframe.style.height = `${px}px`;
+  clearTimeout(applyTimer);
+  applyTimer = setTimeout(() => {
+    const againTarget = Math.round(Number(lastApplied) || 0);
+    const again = __oddSuccessMode ? againTarget : Math.max(minHAttr, againTarget);
+    iframe.style.height = `${again}px`;
+  }, 120);
+};
 
     // Receive height from the form and resize the element
     window.addEventListener('message', (e) => {
@@ -51,7 +49,8 @@ class OddIntakeElement extends HTMLElement {
           h = data.height;
         } else if (typeof data.oddIntakeHeight === 'number') {
           h = data.oddIntakeHeight;
-        } else if (data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') { __oddSuccessMode = true;
+        } else if (data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') {
+          __oddSuccessMode = true;
           // success screen often has a different height
           h = data.height;
         }
