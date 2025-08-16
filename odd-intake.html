@@ -201,8 +201,11 @@
   // -------- HEIGHT MESSAGING --------
   
 // ==== ODD HEIGHT PROTOCOL v3 (child/widget) ====
+// v5: adds hard-mode direct frameElement height writes
 (function(){
   const HP = {
+    // v5
+    hardMode: true,
     childId: String(Math.random()).slice(2),
     ready: false,
     successMode: false,
@@ -217,6 +220,13 @@
   }
 
   function emitHeight(px, reason){
+    // v5 hard mode: attempt to directly set the iframe element height from inside the child.
+    try {
+      if (HP.hardMode && window.frameElement && window.frameElement.style){
+        window.frameElement.style.height = h + 'px';
+      }
+    } catch(_) {}
+
     const h = Math.max(0, Math.round(Number(px)||0));
     if (!h) return;
     const ts = Date.now();
@@ -250,7 +260,10 @@
   }
 
   function send(reason){
-    emitHeight(measure(), reason);
+    const m = measure();
+    // v5 hard mode: attempt direct write
+    try{ if(HP.hardMode && window.frameElement && window.frameElement.style){ window.frameElement.style.height = m + 'px'; } }catch(_){}
+    emitHeight(m, reason);
   }
 
   // Handshake
@@ -284,6 +297,7 @@
       const m = measure();
       if (Math.abs(m - lastM) > threshold){
         lastM = m;
+        try{ if(HP.hardMode && window.frameElement && window.frameElement.style){ window.frameElement.style.height = m + 'px'; } }catch(_){}
         emitHeight(m, 'raf');
       }
       if (frames < maxFrames) HP.rafId = requestAnimationFrame(step);
@@ -307,11 +321,12 @@
   window.addEventListener('orientationchange', ()=> send('orientationchange'));
 
   // Expose a helper for success mode switch
-  window.__oddEnterSuccessMode = function(){ HP.successMode = true; send('enter_success'); };
+  window.__oddEnterSuccessMode = function(){ HP.successMode = true; try{ if(HP.hardMode && window.frameElement && window.frameElement.style){ window.frameElement.style.height = measure() + 'px'; } }catch(_){}; send('enter_success'); };
 
   // Announce child ready and start loop
   childReady();
   bootStrapLoop();
+  /*__ODD_V5_ADAMANT__*/ HP.adamant = setInterval(()=>{ try{ if(HP.hardMode && window.frameElement && window.frameElement.style){ window.frameElement.style.height = measure() + 'px'; } }catch(_){} }, 7000);
 })();
 // ==== END ODD HEIGHT PROTOCOL v3 ====
           try{ window.parent.postMessage(msgLegacy, origin); }catch(_){/*noop*/}
