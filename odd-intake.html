@@ -101,7 +101,7 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-</label>
+          </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
             <input id="orgInput" type="text" class="inp" placeholder="Organization (if applicable)" />
@@ -170,7 +170,7 @@
           <div>
             <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
             <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" checked /> Yes</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" / checked> Yes</label>
               <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
             </div>
           </div>
@@ -261,7 +261,7 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ const badge = document.getElementById('discountBadge'); if (badge) badge.remove(); }%`; } else { badge.classList.add('hidden'); } }
+  function updateDiscountBadge(){ const b=document.getElementById("discountBadge"); if(b) b.remove(); }%`; } else { badge.classList.add('hidden'); } }
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -665,12 +665,37 @@
     updateSubmitState(); debouncedSendHeight();
   }
 
-  function updateSubmitState(){
-    const form = document.getElementById('intakeForm');
-    const btn = document.getElementById('submitBtn');
-    if (btn && btn.dataset.loading==='1') return;
-    const valid = form.checkValidity();
-    if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
+  
+function updateSubmitState(){
+  const form = document.getElementById('intakeForm');
+  const btn  = document.getElementById('submitBtn');
+  if (!btn || !form) return;
+  if (btn && btn.dataset.loading==='1') return;
+
+  const first = document.getElementById('firstNameInput');
+  const last  = document.getElementById('lastNameInput');
+  const email = document.getElementById('emailInput');
+
+  const identityOk =
+    (!!first && !!first.value.trim()) &&
+    (!!last  && !!last.value.trim())  &&
+    (!!email && !!email.value.trim() && email.checkValidity && email.checkValidity());
+
+  const valid = (form.checkValidity ? form.checkValidity() : true) && identityOk;
+
+  if (valid) {
+    btn.disabled = false;
+    btn.classList.remove('btn-disabled');
+    btn.classList.add('btn-primary');
+    btn.textContent = 'Submit Request';
+  } else {
+    btn.disabled = true;
+    btn.classList.add('btn-disabled');
+    btn.classList.remove('btn-primary');
+    btn.textContent = 'Complete required fields to submit';
+  }
+}
+
     else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
   }
 
@@ -697,9 +722,6 @@
     addServiceCard(true);
     // Immediate height ping after first render
     sendHeight(true);
-    // Default “Yes” for mailing list (defensive)
-    (function(){ const mailYes = document.querySelector('input[name="mailing"][value="yes"]'); if (mailYes) mailYes.checked = true; })();
-
 
     // 3) Height observers → Wix
     try{
@@ -735,45 +757,34 @@
     // 7) Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      // Manual validation for identity fields (they live outside <form>)
-      (function(){
-        const first = document.getElementById('firstNameInput');
-        const last  = document.getElementById('lastNameInput');
-        const email = document.getElementById('emailInput');
-        const targets = [first, last, email].filter(Boolean);
-        let bad = null;
-        for (const el of targets){
-          const val = (el.value||'').trim();
-          if (!val){ bad = bad || el; }
-          if (!bad && el.type === 'email' && !el.checkValidity()) bad = el;
-        }
-        if (bad){ bad.reportValidity(); return; }
-      })();
+      
+  // Require identity fields (outside <form>) before native form validity
+  {
+    const first = document.getElementById('firstNameInput');
+    const last  = document.getElementById('lastNameInput');
+    const email = document.getElementById('emailInput');
 
-      const btn = document.getElementById('submitBtn');
+    const identityOk =
+      (!!first && !!first.value.trim()) &&
+      (!!last  && !!last.value.trim())  &&
+      (!!email && !!email.value.trim() && (email.checkValidity ? email.checkValidity() : true));
+
+    if (!identityOk) {
+      updateSubmitState();
+      const offender =
+        (!first?.value?.trim() ? first :
+         (!last?.value?.trim()  ? last  : email));
+      if (offender && offender.reportValidity) offender.reportValidity();
+      return;
+    }
+  }
+const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
       if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
 
       const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
-      // Sanitize hours: only include hours for perHour services
-      if (unit !== 'perHour' && primary) {
-        try { primary.hours = 0; } catch(_) {}
-      }
-      // Clean addon hours: keep only those addons that actually require hours
-      try {
-        const addonDefs = (CONFIG.catalog && CONFIG.catalog.addons) ? CONFIG.catalog.addons : [];
-        if (primary && primary.addonHours){
-          for (const key of Object.keys(primary.addonHours)){
-            const def = addonDefs.find(a => String(a.id) === String(key));
-            if (!def || def.needsHoursForEstimate !== true){
-              delete primary.addonHours[key];
-            }
-          }
-        }
-      } catch(_) {}
-
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -796,40 +807,55 @@
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
 
-      try{
+      
+// Sanitize hours: unless an on-page #hoursInput is visible, drop service.hours
+try{
+  const hEl = document.getElementById('hoursInput');
+  const visible = !!(hEl && (hEl.offsetParent !== null));
+  if (!visible && payload && payload.service) { delete payload.service.hours; }
+}catch(_){}
+try{
         const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
         const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 
-        const formEl = document.getElementById('intakeForm'); if (formEl) formEl.remove();
-        const idCard = document.getElementById('identityCard'); if (idCard) idCard.remove();
-        const header = document.getElementById('pageHeader'); if (header) header.remove();
+        const __formEl = document.getElementById('intakeForm'); if(__formEl) __formEl.remove();
+const __idCard = document.getElementById('identityCard'); if(__idCard) __idCard.remove();
+const __header = document.getElementById('pageHeader'); if(__header) __header.remove();
         const success = document.getElementById('successScreen');
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
           document.getElementById('successRef').textContent = new Date().toLocaleString();
           success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
           success.style.display = '';
+
+// Measure just the success card with padding and notify parent
+(function(){
+  const success = document.getElementById('successScreen');
+  if (!success) return;
+  success.style.display=''; // ensure visible
+  const pad = 24;
+  const successH = Math.ceil(success.getBoundingClientRect().height + pad);
+
+  (ALLOWED_PARENTS||[]).forEach(origin=>{
+    try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, origin); }catch(_){}
+  });
+  try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); }catch(_){}
+
+  postHeights(successH);
+  setTimeout(()=>postHeights(successH), 80);
+  setTimeout(()=>postHeights(Math.max(successH, measureHeight())), 200);
+  window.__oddDidSuccessResize = true;
+})();
+
         }
-        const successEl = document.getElementById('successScreen');
-        const pad = 24;
-        const successH = Math.ceil((successEl?.getBoundingClientRect().height || 0) + pad);
-
-        (ALLOWED_PARENTS||[]).forEach(origin=>{ 
-          try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, origin); }catch(_){}
-        });
-          // Fallback: broadcast to any parent (helps Wix preview / editors)
-          try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); }catch(_){}
-
-
-        postHeights(successH);
-        setTimeout(()=>postHeights(successH), 80);
-        setTimeout(()=>postHeights(Math.max(successH, measureHeight())), 200);
-        window.__oddDidSuccessResize = true;
+        const nowH = measureHeight();
+        (ALLOWED_PARENTS||[]).forEach(origin=>{ try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); }catch(_){/*noop*/} });
+        postHeights(nowH); const _int = setInterval(()=>postHeights(measureHeight()), 200); setTimeout(()=>clearInterval(_int), 2000);
       }catch(err){ console.error(err); alert('Sorry, something went wrong sending your request. Please try again.'); }
       finally{
         if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
-        updateSubmitState(); if (!window.__oddDidSuccessResize) { postHeights(measureHeight()); }
+        updateSubmitState(); if(!window.__oddDidSuccessResize){ postHeights(measureHeight()); }
       }
     });
 
