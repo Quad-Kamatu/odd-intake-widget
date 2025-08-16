@@ -15,7 +15,7 @@ class OddIntakeElement extends HTMLElement {
     const iframe = document.createElement('iframe');
     iframe.src = this.getAttribute('src') || '';
     iframe.style.width = '100%';
-    iframe.style.height = (this.getAttribute('min-height') || '320') + 'px';
+    iframe.style.height = `${minHAttr}px`;
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
@@ -29,18 +29,24 @@ class OddIntakeElement extends HTMLElement {
     
     const applyHeight = (h) => {
       const n = Math.round(Number(h) || 0);
-      if (!n) return;
       const px = __oddSuccessMode ? n : Math.max(minHAttr, n);
-      if (Math.abs(px - lastApplied) < 1) return;
+      if (!px || Math.abs(px - lastApplied) < 1) return;
       lastApplied = px;
       iframe.style.height = `${px}px`;
       clearTimeout(applyTimer);
-      applyTimer = setTimeout(() => {
+      applyTimer = setTimeout(()=>{
         const again = __oddSuccessMode ? lastApplied : Math.max(minHAttr, lastApplied);
         iframe.style.height = `${again}px`;
       }, 120);
+    }
+px`;
+      // small delayed follow-up to catch late layout shifts
+      clearTimeout(applyTimer);
+      applyTimer = setTimeout(() => {
+        const again = Math.max(minHAttr, Math.round(Number(lastApplied)));
+        iframe.style.height = `${again}px`;
+      }, 120);
     };
-
 
     // Receive height from the form and resize the element
     window.addEventListener('message', (e) => {
