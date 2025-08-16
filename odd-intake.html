@@ -735,6 +735,21 @@
     // 7) Submit
     document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
+      // Manual validation for identity fields (they live outside <form>)
+      (function(){
+        const first = document.getElementById('firstNameInput');
+        const last  = document.getElementById('lastNameInput');
+        const email = document.getElementById('emailInput');
+        const targets = [first, last, email].filter(Boolean);
+        let bad = null;
+        for (const el of targets){
+          const val = (el.value||'').trim();
+          if (!val){ bad = bad || el; }
+          if (!bad && el.type === 'email' && !el.checkValidity()) bad = el;
+        }
+        if (bad){ bad.reportValidity(); return; }
+      })();
+
       const btn = document.getElementById('submitBtn');
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
@@ -742,6 +757,23 @@
       if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
 
       const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
+      // Sanitize hours: only include hours for perHour services
+      if (unit !== 'perHour' && primary) {
+        try { primary.hours = 0; } catch(_) {}
+      }
+      // Clean addon hours: keep only those addons that actually require hours
+      try {
+        const addonDefs = (CONFIG.catalog && CONFIG.catalog.addons) ? CONFIG.catalog.addons : [];
+        if (primary && primary.addonHours){
+          for (const key of Object.keys(primary.addonHours)){
+            const def = addonDefs.find(a => String(a.id) === String(key));
+            if (!def || def.needsHoursForEstimate !== true){
+              delete primary.addonHours[key];
+            }
+          }
+        }
+      } catch(_) {}
+
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -786,6 +818,9 @@
         (ALLOWED_PARENTS||[]).forEach(origin=>{ 
           try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, origin); }catch(_){}
         });
+          // Fallback: broadcast to any parent (helps Wix preview / editors)
+          try{ window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: successH, ts: Date.now() }, '*'); }catch(_){}
+
 
         postHeights(successH);
         setTimeout(()=>postHeights(successH), 80);
