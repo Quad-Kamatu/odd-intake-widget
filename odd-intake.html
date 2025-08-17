@@ -72,134 +72,138 @@
     .error-message { color: red; font-size: 0.875rem; margin-top: 0.25rem; }
   </style>
 </head>
-<body class="bg-transparent text-gray-900">
-  <div class="max-w-4xl mx-auto space-y-6 p-6">
+<body class="text-gray-900">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <h1 class="text-2xl font-bold mb-6 page-title">Service Request</h1>
+
     <!-- Loading Screen -->
-    <div id="loading-screen" class="card text-center">
+    <div id="loading-screen" class="text-center py-12">
       <p class="text-lg text-gray-600">Loading services catalog...</p>
     </div>
 
     <!-- Error Screen -->
-    <div id="error-screen" class="hidden card text-center">
+    <div id="error-screen" class="hidden text-center py-12">
       <p class="text-lg text-red-600">Catalog not available. Please email info@onedaydance.com for assistance.</p>
     </div>
 
     <!-- Form -->
-    <form id="intake-form" class="hidden space-y-6">
-      <!-- Identity & Discount Card -->
-      <div id="identityCard" class="card">
+    <form id="intake-form" class="space-y-6 hidden">
+      <!-- Your Info & Discount Qualification -->
+      <div class="card">
         <div class="grid md:grid-cols-2 gap-4">
-          <div class="space-y-4">
-            <div class="lbl">Your Info</div>
-            <div class="row">
-              <label class="block">
-                <span class="lbl">First Name *</span>
-                <input id="first-name" name="firstName" required type="text" class="inp" placeholder="Jane" />
+          <div>
+            <h2 class="text-xl font-semibold mb-2">Your Info</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="first-name" class="block text-sm font-medium text-gray-700">First Name *</label>
+                <input type="text" id="first-name" name="firstName" required class="inp" placeholder="Jane">
                 <p class="error-message hidden" data-error-for="first-name">First name is required.</p>
-              </label>
-              <label class="block">
-                <span class="lbl">Last Name *</span>
-                <input id="last-name" name="lastName" required type="text" class="inp" placeholder="Doe" />
-                <p class="error-message hidden" data-error-for="last-name">Last name is required.</p>
-              </label>
-            </div>
-            <label class="block">
-              <span class="lbl">Email *</span>
-              <input id="email" name="email" required type="email" class="inp" placeholder="you@example.com" />
-              <p class="error-message hidden" data-error-for="email">Valid email is required.</p>
-              <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
-            </label>
-            <label class="block">
-              <span class="lbl">Organization Name (optional)</span>
-              <input id="organization-name" name="organizationName" type="text" class="inp" placeholder="Organization (if applicable)" />
-            </label>
-          </div>
-          <div class="space-y-4">
-            <div class="lbl">Discount Qualification</div>
-            <div>
-              <div class="text-sm text-gray-700 mb-2">Do you qualify for one of these discounts? (select one)</div>
-              <div class="flex flex-col gap-2 text-sm">
-                <label class="inline-flex items-center gap-2"><input type="radio" name="discountCategory" value="none" checked /> None</label>
-                <label class="inline-flex items-center gap-2"><input type="radio" name="discountCategory" value="student" /> Student — 10% (show student ID)</label>
-                <label class="inline-flex items-center gap-2"><input type="radio" name="discountCategory" value="nonprofit" /> 501(c)(3) or fiscally sponsored — 10%</label>
-                <label class="inline-flex items-center gap-2"><input type="radio" name="discountCategory" value="odd-artist" /> ODD Artist — 20%</label>
               </div>
+              <div>
+                <label for="last-name" class="block text-sm font-medium text-gray-700">Last Name *</label>
+                <input type="text" id="last-name" name="lastName" required class="inp" placeholder="Doe">
+                <p class="error-message hidden" data-error-for="last-name">Last name is required.</p>
+              </div>
+            </div>
+            <div class="mt-4">
+              <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
+              <input type="email" id="email" name="email" required class="inp" placeholder="you@example.com">
+              <p class="error-message hidden" data-error-for="email">Valid email is required.</p>
+            </div>
+            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
+            <div class="mt-4">
+              <label for="organization-name" class="block text-sm font-medium text-gray-700">Organization Name (optional)</label>
+              <input type="text" id="organization-name" name="organizationName" class="inp" placeholder="Organization (if applicable)">
+            </div>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold mb-2">Discount Qualification</h2>
+            <p class="mb-2 text-sm text-gray-600">Do you qualify for one of these discounts? (select one)</p>
+            <div class="space-y-2 text-sm">
+              <label class="flex items-center">
+                <input type="radio" name="discountCategory" value="none" checked class="mr-2 focus:ring-blue-500"> None
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="discountCategory" value="student" class="mr-2 focus:ring-blue-500"> Student — 10% (show student ID)
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="discountCategory" value="nonprofit" class="mr-2 focus:ring-blue-500"> 501(c)(3) or fiscally sponsored — 10%
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="discountCategory" value="odd-artist" class="mr-2 focus:ring-blue-500"> ODD Artist — 20%
+              </label>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Services Section -->
-      <div class="card" id="services-section">
-        <div class="lbl mb-4">Additional Services</div>
-        <div id="service-cards" class="space-y-4"></div>
-        <button type="button" id="add-service" class="btn btn-primary mt-4">+ Add another service</button>
+      <div id="services-section" class="card">
+        <h2 class="text-xl font-semibold mb-2">Additional Services</h2>
+        <button type="button" id="add-service" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ Add another service</button>
+        <div id="service-cards" class="space-y-4 mt-4"></div>
       </div>
 
       <!-- Estimate Section -->
       <div class="card">
-        <div class="lbl mb-4">Estimate</div>
-        <div class="space-y-4">
-          <div>
-            <span class="lbl">Quote Breakdown</span>
-            <pre id="quote-breakdown" class="mt-2 p-2 bg-gray-100 rounded text-sm whitespace-pre-wrap">—</pre>
-          </div>
-          <div>
-            <span class="lbl">Estimated Total</span>
-            <p id="estimated-total" class="mt-2 text-lg font-bold mono">$0.00</p>
-          </div>
+        <h2 class="text-xl font-semibold mb-2">Estimate</h2>
+        <div>
+          <p class="font-medium">Quote Breakdown</p>
+          <pre id="quote-breakdown" class="mt-2 p-2 bg-gray-100 rounded text-sm whitespace-pre-wrap">—</pre>
+        </div>
+        <div class="mt-4">
+          <p class="font-medium">Estimated Total</p>
+          <p id="estimated-total" class="text-lg font-bold">$0.00</p>
         </div>
       </div>
 
       <!-- Additional Info and Submit Section -->
       <div class="card">
-        <label class="block mb-4">
-          <span class="lbl">Additional relevant information</span>
-          <textarea id="additional-info" name="additionalInfo" rows="4" class="inp"></textarea>
-        </label>
-        <label class="block mb-4">
-          <span class="lbl">Requested providers (optional)</span>
-          <input id="requested-providers" name="requestedProviders" type="text" class="inp" />
-        </label>
-        <div class="space-y-2 mb-4 text-sm">
-          <label class="flex items-center gap-2">
-            <input type="checkbox" id="tos-agree" required /> I have read and agree to the Terms of Service *
+        <div>
+          <label for="additional-info" class="block text-sm font-medium text-gray-700">Additional relevant information</label>
+          <textarea id="additional-info" name="additionalInfo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+        </div>
+        <div class="mt-4">
+          <label for="requested-providers" class="block text-sm font-medium text-gray-700">Requested providers (optional)</label>
+          <input id="requested-providers" name="requestedProviders" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        <div class="space-y-2 mt-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="tos-agree" required class="mr-2 focus:ring-blue-500"> I have read and agree to the Terms of Service *
           </label>
           <p class="error-message hidden" data-error-for="tos-agree">You must agree to the Terms of Service.</p>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" id="booking-understand" required /> I understand that submitting this form does not constitute confirmation of booking *
+          <label class="flex items-center">
+            <input type="checkbox" id="booking-understand" required class="mr-2 focus:ring-blue-500"> I understand that submitting this form does not constitute confirmation of booking *
           </label>
           <p class="error-message hidden" data-error-for="booking-understand">You must acknowledge this.</p>
         </div>
-        <div class="mb-4">
-          <span class="lbl">Would you like to join our mailing list to receive offers and promotions?</span>
-          <div class="flex space-x-4 mt-2 text-sm">
-            <label class="flex items-center gap-2">
-              <input type="radio" name="mailingOptIn" value="yes" checked /> Yes
+        <div class="mt-4">
+          <p class="font-medium">Would you like to join our mailing list to receive offers and promotions?</p>
+          <div class="flex space-x-4 mt-2">
+            <label class="flex items-center">
+              <input type="radio" name="mailingOptIn" value="yes" checked class="mr-2 focus:ring-blue-500"> Yes
             </label>
-            <label class="flex items-center gap-2">
-              <input type="radio" name="mailingOptIn" value="no" /> No
+            <label class="flex items-center">
+              <input type="radio" name="mailingOptIn" value="no" class="mr-2 focus:ring-blue-500"> No
             </label>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary w-full">Submit Request</button>
+        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded mt-4 hover:bg-green-600 w-full">Submit Request</button>
       </div>
     </form>
 
     <!-- Success Screen -->
-    <div id="success-screen" class="hidden card text-center">
+    <div id="success-screen" class="hidden text-center py-12">
       <h2 class="text-2xl font-bold mb-4">Thanks — your request was sent!</h2>
       <p>We’ll follow up by email shortly.</p>
-      <p class="mt-2 text-sm muted">Submitted: <span id="submitted-ts"></span></p>
-      <div class="mt-6">
-        <a href="/services" class="link">Return to Services</a>
+      <p>Submitted: <span id="submitted-ts"></span></p>
+      <div class="mt-4">
+        <a href="/services" class="text-blue-500 hover:underline">Return to Services</a>
       </div>
     </div>
   </div>
 
   <script>
-    // Full JavaScript logic for the form with fixes for height loop, service display, and potential memory issues
-
     // Global variables
     let catalog = { services: [], pricing: [], addons: [] };
     let serviceCards = [];
@@ -231,7 +235,7 @@
       if (errorElem) errorElem.classList.add('hidden');
     }
 
-    // Height update function (removed recursive calls to prevent infinite loop and memory leak)
+    // Height update function
     function updateHeight() {
       const height = Math.max(
         document.body.scrollHeight,
@@ -239,17 +243,17 @@
         document.body.offsetHeight,
         document.documentElement.offsetHeight
       );
-      parent.postMessage({ type: 'ODD_FORM_HEIGHT', height: height + 20 }, '*'); // Padding for safety
+      parent.postMessage({ type: 'ODD_FORM_HEIGHT', height: height + 20 }, '*');
     }
 
-    // Debounced version for observers to prevent excessive calls
+    // Debounced update height
     let debounceTimer;
     function debouncedUpdateHeight() {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(updateHeight, 50);
     }
 
-    // Function to trigger height updates with limited follow-ups
+    // Trigger height updates
     function triggerHeightUpdates() {
       updateHeight();
       setTimeout(updateHeight, 60);
@@ -268,7 +272,7 @@
         }
         hideElement('loading-screen');
         showElement('intake-form');
-        addServiceCard(true); // Add primary service card
+        addServiceCard(true);
         triggerHeightUpdates();
       } catch (e) {
         console.error('Catalog error:', e);
@@ -277,7 +281,7 @@
       }
     }
 
-    // Create a service card
+    // Add service card
     function addServiceCard(isPrimary = false) {
       const cardIndex = serviceCards.length;
       const card = document.createElement('div');
@@ -301,92 +305,69 @@
             <p class="error-message hidden" data-error-for="offering-${cardIndex}">Service is required.</p>
           </label>
         </div>
-        <div class="eventRow hidden row">
+        <div class="event-fields hidden space-y-3">
+          <div class="row">
+            <label class="block">
+              <span class="lbl">Date *</span>
+              <input type="date" class="service-date inp">
+              <p class="error-message hidden" data-error-for="date-${cardIndex}">Date is required for events.</p>
+            </label>
+            <label class="block">
+              <span class="lbl">Time *</span>
+              <input type="time" class="service-time inp">
+              <p class="error-message hidden" data-error-for="time-${cardIndex}">Time is required for events.</p>
+            </label>
+          </div>
           <label class="block">
-            <span class="lbl">Date *</span>
-            <input type="date" class="service-date inp">
-            <p class="error-message hidden" data-error-for="date-${cardIndex}">Date is required for events.</p>
-          </label>
-          <label class="block">
-            <span class="lbl">Time *</span>
-            <input type="time" class="service-time inp">
-            <p class="error-message hidden" data-error-for="time-${cardIndex}">Time is required for events.</p>
-          </label>
-        </div>
-        <div class="locationRow hidden">
-          <label class="block">
-            <span class="lbl">Location *</span>
+            <span class="lbl">Venue Address *</span>
             <input type="text" class="service-location inp">
             <p class="error-message hidden" data-error-for="location-${cardIndex}">Location is required for events.</p>
           </label>
         </div>
-        <div class="qtyRow hidden">
+        <div class="quantity-fields hidden space-y-3"></div>
+        <div class="complexity-fields hidden">
           <label class="block">
-            <span class="lbl">Hours *</span>
-            <input type="number" min="1" class="service-hours inp">
-            <p class="error-message hidden" data-error-for="hours-${cardIndex}">Hours are required.</p>
-          </label>
-        </div>
-        <div class="filmLenWrap hidden">
-          <span class="lbl">Film Length (minutes) *</span>
-          <input type="range" class="filmSlider" min="1" max="30" value="5" step="1">
-          <p class="error-message hidden" data-error-for="units-${cardIndex}">Film length is required.</p>
-        </div>
-        <div class="headshotRow hidden">
-          <label class="block">
-            <span class="lbl">Headshots *</span>
-            <input type="number" min="1" class="service-units inp">
-            <p class="error-message hidden" data-error-for="units-${cardIndex}">Number of headshots is required.</p>
-          </label>
-        </div>
-        <div class="complexityWrap hidden">
-          <label class="block">
-            <span class="lbl">Complexity *</span>
+            <span class="lbl">Editing Complexity *</span>
             <select class="service-complexity inp">
               <option value="">Select Complexity</option>
               <option value="simple">Simple</option>
               <option value="moderate">Moderate</option>
               <option value="complex">Complex</option>
             </select>
-            <p class="complexity-description help mt-1 text-xs text-gray-500"></p>
+            <p class="complexity-description mt-1 text-xs text-gray-500"></p>
             <p class="error-message hidden" data-error-for="complexity-${cardIndex}">Complexity is required.</p>
           </label>
         </div>
-        <div class="audioWrap hidden">
-          <span class="lbl">Audio *</span>
-          <div class="flex space-x-4 mt-2 text-sm">
-            <label class="flex items-center gap-2">
-              <input type="radio" name="audio-${cardIndex}" value="yes"> Yes
+        <div class="audio-fields hidden">
+          <p class="text-sm font-medium text-gray-700">Audio *</p>
+          <div class="flex space-x-4 text-sm">
+            <label class="flex items-center">
+              <input type="radio" name="audio-${cardIndex}" value="yes" class="mr-2"> Yes
             </label>
-            <label class="flex items-center gap-2">
-              <input type="radio" name="audio-${cardIndex}" value="no"> No
+            <label class="flex items-center">
+              <input type="radio" name="audio-${cardIndex}" value="no" class="mr-2"> No
             </label>
           </div>
           <p class="error-message hidden" data-error-for="audio-${cardIndex}">Audio selection is required.</p>
         </div>
-        <div class="addonsWrap hidden">
-          <span class="lbl">Add-ons</span>
-          <div class="addons-list mt-2 space-y-2 text-sm"></div>
+        <div class="addons-fields hidden space-y-2">
+          <p class="text-sm font-medium text-gray-700">Add-ons</p>
+          <div class="addons-list text-sm"></div>
         </div>
-      </div>
+        </div>
         ${!isPrimary ? '<button type="button" class="remove-service mt-2 text-red-500 text-xs hover:underline">Remove Service</button>' : ''}
       `;
       document.getElementById('service-cards').appendChild(card);
       serviceCards.push(card);
 
-      // Add event listeners and logic as before...
-      // (The script remains the same, but adjust for new classes if needed, e.g., .inp for inputs)
-
+      // Event listeners...
       const categorySelect = card.querySelector('.service-category');
       const offeringSelect = card.querySelector('.service-offering');
-      const eventRow = card.querySelector('.eventRow');
-      const locationRow = card.querySelector('.locationRow');
-      const qtyRow = card.querySelector('.qtyRow');
-      const filmLenWrap = card.querySelector('.filmLenWrap');
-      const headshotRow = card.querySelector('.headshotRow');
-      const complexityWrap = card.querySelector('.complexityWrap');
-      const audioWrap = card.querySelector('.audioWrap');
-      const addonsWrap = card.querySelector('.addonsWrap');
+      const eventFields = card.querySelector('.event-fields');
+      const quantityFields = card.querySelector('.quantity-fields');
+      const complexityFields = card.querySelector('.complexity-fields');
+      const audioFields = card.querySelector('.audio-fields');
+      const addonsFields = card.querySelector('.addons-fields');
       const addonsList = card.querySelector('.addons-list');
 
       categorySelect.addEventListener('change', (e) => {
@@ -403,57 +384,64 @@
         const offering = catalog.pricing.find(p => p.offeringId === offeringId);
         if (!offering) return;
 
-        // Show/hide event fields
         if (offering.isEvent) {
-          eventRow.classList.remove('hidden');
-          locationRow.classList.remove('hidden');
+          eventFields.classList.remove('hidden');
         } else {
-          eventRow.classList.add('hidden');
-          locationRow.classList.add('hidden');
+          eventFields.classList.add('hidden');
         }
 
-        // Quantity fields based on unit
+        let quantityHtml = '';
         if (offering.priceUnit === 'perHour') {
-          qtyRow.classList.remove('hidden');
-          filmLenWrap.classList.add('hidden');
-          headshotRow.classList.add('hidden');
+          quantityHtml = `
+            <label class="block">
+              <span class="lbl">Hours *</span>
+              <input type="number" min="1" class="service-hours inp">
+              <p class="error-message hidden" data-error-for="hours-${cardIndex}">Hours are required.</p>
+            </label>
+          `;
         } else if (offering.priceUnit === 'perMinute') {
-          qtyRow.classList.add('hidden');
-          filmLenWrap.classList.remove('hidden');
-          headshotRow.classList.add('hidden');
-          // Add event for slider if needed
+          quantityHtml = `
+            <label class="block">
+              <span class="lbl">Film Length (minutes) *</span>
+              <input type="range" class="filmSlider service-units" min="1" max="30" value="5" step="1">
+              <p class="error-message hidden" data-error-for="units-${cardIndex}">Film length is required.</p>
+            </label>
+          `;
         } else if (offering.priceUnit === 'perHeadshot') {
-          qtyRow.classList.add('hidden');
-          filmLenWrap.classList.add('hidden');
-          headshotRow.classList.remove('hidden');
+          quantityHtml = `
+            <label class="block">
+              <span class="lbl">Headshots *</span>
+              <input type="number" min="1" class="service-units inp">
+              <p class="error-message hidden" data-error-for="units-${cardIndex}">Number of headshots is required.</p>
+            </label>
+          `;
+        }
+        quantityFields.innerHTML = quantityHtml;
+        if (offering.priceUnit !== 'flat') {
+          quantityFields.classList.remove('hidden');
         } else {
-          qtyRow.classList.add('hidden');
-          filmLenWrap.classList.add('hidden');
-          headshotRow.classList.add('hidden');
+          quantityFields.classList.add('hidden');
         }
 
-        // Complexity
         if (offering.hasComplexity) {
-          complexityWrap.classList.remove('hidden');
-          const complexitySelect = complexityWrap.querySelector('.service-complexity');
+          complexityFields.classList.remove('hidden');
+          const complexitySelect = complexityFields.querySelector('.service-complexity');
           complexitySelect.addEventListener('change', (ev) => {
             const level = ev.target.value;
             const desc = offering.complexityTexts[level] || '';
-            complexityWrap.querySelector('.complexity-description').textContent = desc;
+            complexityFields.querySelector('.complexity-description').textContent = desc;
             updateEstimate();
           });
         } else {
-          complexityWrap.classList.add('hidden');
+          complexityFields.classList.add('hidden');
         }
 
-        // Audio
         if (offering.showAudioOption) {
-          audioWrap.classList.remove('hidden');
+          audioFields.classList.remove('hidden');
         } else {
-          audioWrap.classList.add('hidden');
+          audioFields.classList.add('hidden');
         }
 
-        // Add-ons
         const applicableAddons = catalog.addons.filter(a => 
           a.appliesToCategories.includes(offering.serviceKey) || a.appliesToOfferings.includes(offering.offeringId)
         );
@@ -462,15 +450,15 @@
           applicableAddons.forEach(addon => {
             if (addon.selectionMode === 'boolean') {
               addonsHtml += `
-                <label class="flex items-center gap-2">
-                  <input type="checkbox" class="addon-checkbox" data-addon-id="${addon.id}"> ${addon.label} ($${addon.rate} ${addon.pricingMode})
+                <label class="flex items-center">
+                  <input type="checkbox" class="addon-checkbox mr-2" data-addon-id="${addon.id}"> ${addon.label} ($${addon.rate} ${addon.pricingMode})
                 </label>
               `;
             } else if (addon.selectionMode === 'integer') {
               addonsHtml += `
-                <div class="flex items-center gap-2">
+                <div class="flex items-center">
                   <label>${addon.label} ($${addon.rate} ${addon.pricingMode})</label>
-                  <input type="number" min="0" max="${addon.maxQty}" class="addon-qty inp w-20" data-addon-id="${addon.id}">
+                  <input type="number" min="0" max="${addon.maxQty}" class="addon-qty ml-2 w-20 inp" data-addon-id="${addon.id}">
                 </div>
               `;
             } else if (addon.selectionMode === 'string') {
@@ -483,20 +471,26 @@
             }
           });
           addonsList.innerHTML = addonsHtml;
-          addonsWrap.classList.remove('hidden');
+          addonsFields.classList.remove('hidden');
         } else {
-          addonsWrap.classList.add('hidden');
+          addonsFields.classList.add('hidden');
         }
 
         updateEstimate();
         triggerHeightUpdates();
       });
 
-      // Input listeners for updates
-      card.addEventListener('input', updateEstimate);
-      card.addEventListener('change', updateEstimate);
+      // Add input and change listeners for the card
+      card.addEventListener('input', () => {
+        updateEstimate();
+        triggerHeightUpdates();
+      });
+      card.addEventListener('change', () => {
+        updateEstimate();
+        triggerHeightUpdates();
+      });
 
-      // Remove button if not primary
+      // Remove service if not primary
       if (!isPrimary) {
         card.querySelector('.remove-service').addEventListener('click', () => {
           card.remove();
