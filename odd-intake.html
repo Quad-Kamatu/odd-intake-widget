@@ -234,14 +234,14 @@
       const h2 = Math.ceil(root.scrollHeight + pad);
       const h3 = Math.ceil(document.documentElement.scrollHeight || 0);
       const h4 = Math.ceil(document.body.scrollHeight || 0);
-      return Math.max(h1, h2, h3, h4, 320);
+      return Math.max(h1, h2, h3, h4, 800); // Increased minimum height
     }
     const d = document.documentElement;
     const b = document.body;
     return Math.max(
       Math.ceil(d?.scrollHeight || 0),
       Math.ceil(b?.scrollHeight || 0),
-      320
+      800 // Increased minimum height
     );
   }
 
@@ -266,15 +266,25 @@
     });
   }
 
-  // Debounced version for high-frequency events
-  function debounce(fn, wait=150) { 
-    let t; 
-    return (...a) => { 
-      clearTimeout(t); 
-      t = setTimeout(() => fn(...a), wait); 
-    }; 
+  // Initial height sending with better reliability
+  function sendInitialHeight() {
+    // Send height immediately
+    sendHeight();
+    
+    // Wait for fonts and images to load
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        setTimeout(sendHeight, 50);
+        setTimeout(sendHeight, 150);
+      });
+    }
+    
+    // Fallback for older browsers
+    setTimeout(sendHeight, 100);
+    setTimeout(sendHeight, 300);
+    setTimeout(sendHeight, 600);
+    setTimeout(sendHeight, 1200);
   }
-  const debouncedSendHeight = debounce(sendHeight, 150);
 
   // -------- UTILS --------
   const $ = (sel) => document.querySelector(sel);
@@ -748,8 +758,9 @@
 
     // 2) Build primary service card
     addServiceCard(true);
-    // Initial height measurement
-    sendHeight();
+    
+    // 2.5) Send initial height with better reliability
+    sendInitialHeight();
 
     // 3) Setup height observers with improved reliability
     try {
@@ -771,13 +782,8 @@
       document.addEventListener('change', debouncedSendHeight);
       
       // Handle window events
-      window.addEventListener('load', sendHeight);
+      window.addEventListener('load', sendInitialHeight);
       window.addEventListener('resize', debouncedSendHeight);
-      
-      // Initial height pings with reduced frequency
-      setTimeout(sendHeight, 100);
-      setTimeout(sendHeight, 500);
-      setTimeout(sendHeight, 1000);
       
     } catch(e) {
       console.warn('Height observer setup failed:', e);
@@ -879,8 +885,9 @@
     });
 
     updateSubmitState();
-    // Final initial height measurement
-    sendHeight();
+    
+    // Final robust initial height measurement
+    sendInitialHeight();
   });
   </script>
 </body>
