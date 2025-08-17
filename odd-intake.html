@@ -631,7 +631,7 @@
           subType: offering?.subType,
           date: card.querySelector('.service-date')?.value || '',
           time: card.querySelector('.service-time')?.value || '',
-          location: card.querySelector('.service-location')?.value.trim() || '',
+          location: card.querySelector('.service-location').value.trim() || '',
           priceUnit: offering?.priceUnit,
           hasComplexity: offering?.hasComplexity,
           complexity: card.querySelector('.service-complexity')?.value || '',
