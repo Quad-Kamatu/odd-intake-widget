@@ -101,7 +101,6 @@
           <label class="block">
             <span class="lbl">Email *</span>
             <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-            <div class="mt-2"><span id="discountBadge" class="badge hidden">Discount eligible</span></div>
           </label>
           <label class="block">
             <span class="lbl">Organization Name (optional)</span>
@@ -114,9 +113,9 @@
             <div class="text-sm text-gray-700 mb-2">Do you qualify for one of these discounts? (select one)</div>
             <div class="flex flex-col gap-2 text-sm">
               <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="none" checked /> None</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student – 10% (show student ID)</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored – 10%</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist – 20%</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student â€" 10% (show student ID)</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored â€" 10%</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist â€" 20%</label>
             </div>
           </div>
         </div>
@@ -139,7 +138,7 @@
         <div class="grid md:grid-cols-3 gap-4 items-start">
           <div class="md:col-span-2 card bg-gray-50 border border-gray-200">
             <h4 class="font-semibold mb-2">Quote Breakdown</h4>
-            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">–</div></div>
+            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">â€"</div></div>
           </div>
           <div class="space-y-3">
             <div class="text-sm text-gray-600">Estimated Total</div>
@@ -181,7 +180,7 @@
     </form>
 
     <div id="successScreen" class="card" style="display:none;">
-      <h2 class="text-xl font-semibold mb-2">Thanks – your request was sent!</h2>
+      <h2 class="text-xl font-semibold mb-2">Thanks â€" your request was sent!</h2>
       <p class="text-sm text-gray-700 mb-4">We'll follow up by email shortly.</p>
       <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
       <div class="mt-4">
@@ -282,7 +281,6 @@
   const state = { services: [] };
 
   function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-  function updateDiscountBadge(){ const pct=bestDiscountPercent(); const badge=document.getElementById('discountBadge'); if(!badge) return; if(pct>0){ badge.classList.remove('hidden'); badge.textContent = `Discount: ${pct}%`; } else { badge.classList.add('hidden'); } }
 
   function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
   function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
@@ -500,7 +498,7 @@
         }
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate – except Additional Camera which inherits service hours
+        // For per-minute services that need hours estimate â€" except Additional Camera which inherits service hours
         if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
           const hoursWrap = document.createElement('label'); hoursWrap.className='block';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
@@ -595,7 +593,7 @@
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); updateDiscountBadge(); sendHeight(); }); }
+    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); sendHeight(); }); }
 
     return wrap;
   }
@@ -618,15 +616,15 @@
 
       let cost = 0; let desc = ad.label;
       const mode = (ad.pricingMode||'flat');
-      if (mode==='flat'){ cost = (ad.rate||0) * qty; if(qty>1) desc += ` ×${qty}`; }
+      if (mode==='flat'){ cost = (ad.rate||0) * qty; if(qty>1) desc += ` Ã—${qty}`; }
       else if (mode==='perHour'){
         const inherit = String(ad.label||'').toLowerCase()==='additional camera';
         const hrs = inherit ? (Number(svc.hours)||1) : (meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1));
-        cost = (ad.rate||0) * qty * hrs; desc += ` ×${qty} @ ${money(ad.rate)}/hr for ${hrs} hr`;
+        cost = (ad.rate||0) * qty * hrs; desc += ` Ã—${qty} @ ${money(ad.rate)}/hr for ${hrs} hr`;
       }
       else if (mode==='perMinute'){
         const mins = (Number(svc.units)||1);
-        cost = (ad.rate||0) * qty * mins; desc += ` ×${qty} @ ${money(ad.rate)}/min for ${mins} min`;
+        cost = (ad.rate||0) * qty * mins; desc += ` Ã—${qty} @ ${money(ad.rate)}/min for ${mins} min`;
       }
       if (cost>0) { lines.push(`${desc}: ${money(cost)}`); total += cost; }
     });
@@ -645,7 +643,7 @@
               : 1;
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
-    lines.push(`Base (${esc(meta.subType)} – ${esc(unit)}): ${money(base)}${meta.startingAt?'+':''}`);
+    lines.push(`Base (${esc(meta.subType)} â€" ${esc(unit)}): ${money(base)}${meta.startingAt?'+':''}`);
 
     // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
     let setupFee = 0;
@@ -679,10 +677,10 @@
       grand += res.subtotal; breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
     });
 
-    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">–</div>'; updateSubmitState(); sendHeight(); return; }
+    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">â€"</div>'; updateSubmitState(); sendHeight(); return; }
     const best = bestDiscountPercent(); if (best>0) breakdown.push(`Discount (${best}%): -${money(grand*(best/100))}`);
     const total = Math.max(0, grand * (1 - best/100));
-    $('#quoteTotal').textContent = `${money(total)}`; $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
+    $('#quoteTotal').textContent = `${money(total)}`; $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>â€¢ ${esc(l)}</div>`).join('');
     updateSubmitState(); sendHeight();
   }
 
@@ -690,9 +688,34 @@
     const form = document.getElementById('intakeForm');
     const btn = document.getElementById('submitBtn');
     if (btn && btn.dataset.loading==='1') return;
+    
+    // Check if basic fields are filled
+    const firstName = document.getElementById('firstNameInput').value.trim();
+    const lastName = document.getElementById('lastNameInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    
+    // First check basic required fields
+    if (!firstName || !lastName || !email) {
+      btn.disabled = true;
+      btn.classList.add('btn-disabled');
+      btn.classList.remove('btn-primary');
+      btn.textContent = 'Complete required fields to submit';
+      return;
+    }
+    
+    // Then check full form validity
     const valid = form.checkValidity();
-    if (valid) { btn.disabled=false; btn.classList.remove('btn-disabled'); btn.classList.add('btn-primary'); btn.textContent='Submit Request'; }
-    else { btn.disabled=true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary'); btn.textContent='Complete required fields to submit'; }
+    if (valid) { 
+      btn.disabled = false; 
+      btn.classList.remove('btn-disabled'); 
+      btn.classList.add('btn-primary'); 
+      btn.textContent = 'Submit Request'; 
+    } else { 
+      btn.disabled = true; 
+      btn.classList.add('btn-disabled'); 
+      btn.classList.remove('btn-primary'); 
+      btn.textContent = 'Complete required fields to submit'; 
+    }
   }
 
   function addServiceCard(isPrimary=false){
@@ -751,8 +774,8 @@
       console.warn('Height observer setup failed:', e);
     }
 
-    // 4) Discount listeners
-    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateDiscountBadge(); updateQuote(); }));
+    // 4) Discount listeners (keeping functionality but removing badge logic)
+    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
     // 5) Add another service
     document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); sendHeight(); });
@@ -769,7 +792,7 @@
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
-      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
+      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submittingâ€¦</span>'; }
 
       const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
       const payload = {
@@ -807,7 +830,7 @@
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
           document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} – your request was sent!`;
+          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} â€" your request was sent!`;
           success.style.display = '';
         }
         
@@ -819,8 +842,18 @@
           }catch(_){/*noop*/} 
         });
         
-        // Update height for success screen
-        sendHeight();
+        // Force immediate height updates for success screen
+        setTimeout(() => {
+          sendHeight();
+        }, 50);
+        
+        setTimeout(() => {
+          sendHeight();
+        }, 200);
+        
+        setTimeout(() => {
+          sendHeight();
+        }, 500);
         
       }catch(err){ 
         console.error(err); 
