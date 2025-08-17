@@ -141,8 +141,7 @@
   </div>
 
   <script>
-    // Full JavaScript logic for the form
-    // This is expanded to approximate ~800 lines with comments, functions, and logic
+    // Full JavaScript logic for the form with fixes for height loop, service display, and potential memory issues
 
     // Global variables
     let catalog = { services: [], pricing: [], addons: [] };
@@ -175,10 +174,8 @@
       if (errorElem) errorElem.classList.add('hidden');
     }
 
-    // Height update function with debouncing
-    let heightTimeout;
+    // Height update function (removed recursive calls to prevent infinite loop and memory leak)
     function updateHeight() {
-      clearTimeout(heightTimeout);
       const height = Math.max(
         document.body.scrollHeight,
         document.documentElement.scrollHeight,
@@ -186,15 +183,27 @@
         document.documentElement.offsetHeight
       );
       parent.postMessage({ type: 'ODD_FORM_HEIGHT', height: height + 20 }, '*'); // Padding for safety
-      requestAnimationFrame(updateHeight);
-      heightTimeout = setTimeout(updateHeight, 180);
+    }
+
+    // Debounced version for observers to prevent excessive calls
+    let debounceTimer;
+    function debouncedUpdateHeight() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateHeight, 50);
+    }
+
+    // Function to trigger height updates with limited follow-ups
+    function triggerHeightUpdates() {
+      updateHeight();
+      setTimeout(updateHeight, 60);
+      setTimeout(updateHeight, 180);
     }
 
     // Load catalog
     async function loadCatalog() {
       showElement('loading-screen');
       try {
-        const res = await fetch('https://www.onedaydance.com/_functions/catalog');  // Changed to absolute URL
+        const res = await fetch('https://www.onedaydance.com/_functions/catalog');
         if (!res.ok) throw new Error('Catalog fetch failed');
         catalog = await res.json();
         if (catalog.services.length === 0 || catalog.pricing.length === 0) {
@@ -203,7 +212,7 @@
         hideElement('loading-screen');
         showElement('intake-form');
         addServiceCard(true); // Add primary service card
-        updateHeight();
+        triggerHeightUpdates();
       } catch (e) {
         console.error('Catalog error:', e);
         hideElement('loading-screen');
@@ -224,7 +233,7 @@
             <label class="block text-xs font-medium text-gray-700">Service Type *</label>
             <select class="service-category mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
               <option value="">Select Category</option>
-              ${catalog.services.map(s => `<option value="${s.serviceKey}">${s.serviceName}</option>`).join('')}
+              ${catalog.services.map(s => `<option value="${s.serviceKey}">${s.serviceName || s.serviceKey}</option>`).join('')} <!-- Fix: fallback to serviceKey if serviceName missing -->
             </select>
             <p class="error-message hidden" data-error-for="category-${cardIndex}">Category is required.</p>
           </div>
@@ -302,7 +311,7 @@
           catalog.pricing.filter(p => p.serviceKey === key).map(p => `<option value="${p.offeringId}" data-subtype="${p.subType}">${p.subType}</option>`).join('');
         offeringSelect.disabled = false;
         updateEstimate();
-        updateHeight();
+        triggerHeightUpdates();
       });
 
       offeringSelect.addEventListener('change', (e) => {
@@ -398,7 +407,7 @@
         }
 
         updateEstimate();
-        updateHeight();
+        triggerHeightUpdates();
       });
 
       // Input listeners for updates
@@ -411,11 +420,11 @@
           card.remove();
           serviceCards = serviceCards.filter(c => c.dataset.index !== String(cardIndex));
           updateEstimate();
-          updateHeight();
+          triggerHeightUpdates();
         });
       }
 
-      updateHeight();
+      triggerHeightUpdates();
     }
 
     // Update estimate
@@ -500,6 +509,7 @@
 
       document.getElementById('quote-breakdown').textContent = breakdownLines.length > 0 ? breakdownLines.join('\n') : '—';
       document.getElementById('estimated-total').textContent = `$${total.toFixed(2)}`;
+      triggerHeightUpdates(); // Update height after estimate change
     }
 
     // Form validation
@@ -672,7 +682,7 @@
       const data = buildPayload();
 
       try {
-        const res = await fetch('https://www.onedaydance.com/_functions/submit', {  // Changed to absolute URL
+        const res = await fetch('https://www.onedaydance.com/_functions/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -688,7 +698,7 @@
 
           // Send success height message
           parent.postMessage({ type: 'ODD_FORM_SUCCESS', height: document.body.scrollHeight + 20 }, '*');
-          updateHeight();
+          triggerHeightUpdates();
         } else {
           const error = await res.json();
           alert(`Submission failed: ${error.error || 'Unknown error'}`);
@@ -702,22 +712,28 @@
     // Event listeners
     document.getElementById('intake-form').addEventListener('submit', handleSubmit);
     document.getElementById('add-service').addEventListener('click', () => addServiceCard());
-    document.getElementById('intake-form').addEventListener('input', updateEstimate);
-    document.getElementById('intake-form').addEventListener('change', updateEstimate);
+    document.getElementById('intake-form').addEventListener('input', () => {
+      updateEstimate();
+      triggerHeightUpdates();
+    });
+    document.getElementById('intake-form').addEventListener('change', () => {
+      updateEstimate();
+      triggerHeightUpdates();
+    });
 
-    // Resize observer for dynamic height
-    const resizeObserver = new ResizeObserver(updateHeight);
+    // Resize observer for dynamic height (debounced)
+    const resizeObserver = new ResizeObserver(debouncedUpdateHeight);
     resizeObserver.observe(document.body);
 
-    // Mutation observer for DOM changes
-    const mutationObserver = new MutationObserver(updateHeight);
+    // Mutation observer for DOM changes (debounced)
+    const mutationObserver = new MutationObserver(debouncedUpdateHeight);
     mutationObserver.observe(document.body, { childList: true, subtree: true });
 
     // Initial load
     loadCatalog();
 
     // Global event for height on resize
-    window.addEventListener('resize', updateHeight);
+    window.addEventListener('resize', debouncedUpdateHeight);
   </script>
 </body>
 </html>
