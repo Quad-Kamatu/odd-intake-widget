@@ -1,4 +1,3 @@
-
 // odd-intake-element.js
 class OddIntakeElement extends HTMLElement {
   constructor() {
@@ -18,20 +17,36 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
     shadow.appendChild(iframe);
 
-    // Smoothly apply height changes (guards against jitter)
-    let lastApplied = 0;
+    // Height management with improved reliability
+    let lastApplied = minHAttr;
     let applyTimer = null;
-    const applyHeight = (h) => {
-      const px = Math.max(minHAttr, Math.round(Number(h) || 0));
-      if (!px || Math.abs(px - lastApplied) < 1) return;
+    let isUpdating = false;
+    
+    const applyHeight = (newHeight) => {
+      if (isUpdating) return;
+      
+      const px = Math.max(minHAttr, Math.round(Number(newHeight) || 0));
+      
+      // Only apply if the change is meaningful (more than 3px difference)
+      if (Math.abs(px - lastApplied) < 3) return;
+      
+      isUpdating = true;
       lastApplied = px;
-      iframe.style.height = `${px}px`;
-      // small delayed follow-up to catch late layout shifts
-      clearTimeout(applyTimer);
-      applyTimer = setTimeout(() => {
-        const again = Math.max(minHAttr, Math.round(Number(lastApplied)));
-        iframe.style.height = `${again}px`;
-      }, 120);
+      
+      // Apply the height change
+      requestAnimationFrame(() => {
+        iframe.style.height = `${px}px`;
+        
+        // Clear any pending timer
+        clearTimeout(applyTimer);
+        
+        // Small delayed follow-up to catch late layout shifts
+        applyTimer = setTimeout(() => {
+          const finalHeight = Math.max(minHAttr, Math.round(Number(lastApplied)));
+          iframe.style.height = `${finalHeight}px`;
+          isUpdating = false;
+        }, 100);
+      });
     };
 
     // Receive height from the form and resize the element
@@ -46,21 +61,41 @@ class OddIntakeElement extends HTMLElement {
         } else if (typeof data.oddIntakeHeight === 'number') {
           h = data.oddIntakeHeight;
         } else if (data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') {
-          // success screen often has a different height
+          // Success screen often has a different height
           h = data.height;
         }
       }
 
-      if (h != null) applyHeight(h);
+      if (h != null && h > 0) {
+        applyHeight(h);
+      }
+    });
+
+    // Initial height setup
+    iframe.addEventListener('load', () => {
+      // Give the form a moment to render, then request initial height
+      setTimeout(() => {
+        applyHeight(minHAttr + 50); // Small buffer for initial render
+      }, 200);
     });
   }
 
-  static get observedAttributes() { return ['src']; }
+  static get observedAttributes() { return ['src', 'min-height']; }
+  
   attributeChangedCallback(name, oldVal, newVal) {
     if (name === 'src' && this.shadowRoot) {
       const iframe = this.shadowRoot.querySelector('iframe');
-      if (iframe && newVal && newVal !== oldVal) iframe.src = newVal;
+      if (iframe && newVal && newVal !== oldVal) {
+        iframe.src = newVal;
+      }
+    } else if (name === 'min-height' && this.shadowRoot) {
+      const iframe = this.shadowRoot.querySelector('iframe');
+      const minH = Math.max(320, Number(newVal) || 320);
+      if (iframe) {
+        iframe.style.minHeight = `${minH}px`;
+      }
     }
   }
 }
+
 customElements.define('odd-intake', OddIntakeElement);
