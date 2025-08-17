@@ -113,9 +113,9 @@
             <div class="text-sm text-gray-700 mb-2">Do you qualify for one of these discounts? (select one)</div>
             <div class="flex flex-col gap-2 text-sm">
               <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="none" checked /> None</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student — 10% (show student ID)</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored — 10%</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist — 20%</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student â€" 10% (show student ID)</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored â€" 10%</label>
+              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist â€" 20%</label>
             </div>
           </div>
         </div>
@@ -138,7 +138,7 @@
         <div class="grid md:grid-cols-3 gap-4 items-start">
           <div class="md:col-span-2 card bg-gray-50 border border-gray-200">
             <h4 class="font-semibold mb-2">Quote Breakdown</h4>
-            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">—</div></div>
+            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">â€"</div></div>
           </div>
           <div class="space-y-3">
             <div class="text-sm text-gray-600">Estimated Total</div>
@@ -180,7 +180,7 @@
     </form>
 
     <div id="successScreen" class="card" style="display:none;">
-      <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
+      <h2 class="text-xl font-semibold mb-2">Thanks â€" your request was sent!</h2>
       <p class="text-sm text-gray-700 mb-4">We'll follow up by email shortly.</p>
       <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
       <div class="mt-4">
@@ -198,9 +198,10 @@
   };
   const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
 
-  // -------- HEIGHT MESSAGING (IMPROVED) --------
+  // -------- HEIGHT MESSAGING (FIXED) --------
   let currentHeight = 0;
   let heightRequestId = null;
+  let debouncedSendHeight = null;
 
   function postHeights(px) {
     try {
@@ -217,6 +218,9 @@
   }
 
   function measureHeight() {
+    // Force a layout recalculation first
+    document.body.offsetHeight;
+    
     // If success screen is visible, measure only that
     const successScreen = document.getElementById('successScreen');
     if (successScreen && successScreen.style.display === 'block') {
@@ -225,23 +229,26 @@
       return Math.ceil(rect.height + padding);
     }
     
-    // Otherwise measure the full container
+    // Otherwise measure the full container - use scrollHeight for accurate measurement
     const root = document.querySelector('.max-w-4xl');
     const pad = 12;
     if (root) {
-      const rect = root.getBoundingClientRect();
-      const h1 = Math.ceil(rect.height + pad);
-      const h2 = Math.ceil(root.scrollHeight + pad);
-      const h3 = Math.ceil(document.documentElement.scrollHeight || 0);
-      const h4 = Math.ceil(document.body.scrollHeight || 0);
-      return Math.max(h1, h2, h3, h4, 800); // Increased minimum height
+      // Use scrollHeight which gives the actual content height regardless of viewport
+      const scrollH = Math.ceil(root.scrollHeight + pad);
+      const docScrollH = Math.ceil(document.documentElement.scrollHeight || 0);
+      const bodyScrollH = Math.ceil(document.body.scrollHeight || 0);
+      
+      // Return the maximum but don't impose a minimum height for shrinking
+      return Math.max(scrollH, docScrollH, bodyScrollH);
     }
+    
+    // Fallback measurements
     const d = document.documentElement;
     const b = document.body;
     return Math.max(
       Math.ceil(d?.scrollHeight || 0),
       Math.ceil(b?.scrollHeight || 0),
-      800 // Increased minimum height
+      300 // Reduced minimum height to allow proper shrinking
     );
   }
 
@@ -254,8 +261,8 @@
     heightRequestId = requestAnimationFrame(() => {
       try {
         const newHeight = measureHeight();
-        // Only send if height actually changed by a meaningful amount
-        if (Math.abs(newHeight - currentHeight) > 2) {
+        // Always send height changes, even small ones, to ensure shrinking works
+        if (newHeight !== currentHeight) {
           currentHeight = newHeight;
           postHeights(newHeight);
         }
@@ -264,6 +271,15 @@
       }
       heightRequestId = null;
     });
+  }
+
+  // Create debounced version with shorter delay for better responsiveness
+  function createDebouncedSendHeight() {
+    let timeoutId = null;
+    return function() {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(sendHeight, 50); // Reduced from implicit longer delay
+    };
   }
 
   // Initial height sending with better reliability
@@ -448,7 +464,7 @@
       const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
       subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
       subSel.disabled = false; svc.serviceKey = key; svc.subType = ''; svc.offeringId='';
-      resetServiceUI(); updateQuote(); updateSubmitState(); sendHeight();
+      resetServiceUI(); updateQuote(); updateSubmitState(); debouncedSendHeight();
     }
 
     function renderComplexity(meta){
@@ -498,7 +514,7 @@
         const label = document.createElement('div');
         label.innerHTML = `
           <div class="lbl">${esc(ad.label)}</div>
-          <div class="text-xs text-gray-600">Pricing: ${esc(ad.pricingMode)}${ad.rate?` @ $${money(ad.rate)}`:''}</div>
+          <div class="text-xs text-gray-600">Pricing: ${esc(ad.pricingMode)}${ad.rate?` @ ${money(ad.rate)}`:''}</div>
         `;
         row.appendChild(label);
 
@@ -517,7 +533,7 @@
         }
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate â€" except Additional Camera which inherits service hours
+        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
         if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
           const hoursWrap = document.createElement('label'); hoursWrap.className='block';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
@@ -544,7 +560,7 @@
 
     function toggleForSub(){
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-      if (!meta){ resetServiceUI(); updateSubmitState(); sendHeight(); return; }
+      if (!meta){ resetServiceUI(); updateSubmitState(); debouncedSendHeight(); return; }
 
       // Basic flags
       const unit = meta.priceUnit || 'flat';
@@ -580,7 +596,7 @@
       renderAddons({ ...meta, offeringId: svc.offeringId });
 
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
-      updateSubmitState(); sendHeight();
+      updateSubmitState(); debouncedSendHeight();
     }
 
     // Listeners
@@ -612,7 +628,7 @@
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); sendHeight(); }); }
+    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); debouncedSendHeight(); }); }
 
     return wrap;
   }
@@ -696,11 +712,11 @@
       grand += res.subtotal; breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
     });
 
-    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; updateSubmitState(); sendHeight(); return; }
+    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; updateSubmitState(); debouncedSendHeight(); return; }
     const best = bestDiscountPercent(); if (best>0) breakdown.push(`Discount (${best}%): -${money(grand*(best/100))}`);
     const total = Math.max(0, grand * (1 - best/100));
     $('#quoteTotal').textContent = `${money(total)}`; $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
-    updateSubmitState(); sendHeight();
+    updateSubmitState(); debouncedSendHeight();
   }
 
   function updateSubmitState(){
@@ -746,6 +762,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
+    // Initialize debounced function
+    debouncedSendHeight = createDebouncedSendHeight();
+
     // 1) Load catalog or show fatal
     try{
       const ok = await loadCatalog();
@@ -777,7 +796,7 @@
         elementsToObserve.forEach(el => ro.observe(el));
       }
 
-      // Only trigger height updates on meaningful changes
+      // Use debounced version for input events to prevent excessive calls
       document.addEventListener('input', debouncedSendHeight);
       document.addEventListener('change', debouncedSendHeight);
       
@@ -789,11 +808,11 @@
       console.warn('Height observer setup failed:', e);
     }
 
-    // 4) Discount listeners (keeping functionality but removing badge logic)
+    // 4) Discount listeners
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
     // 5) Add another service
-    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); sendHeight(); });
+    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
 
     // 6) Form validation hooks
     const formEl = document.getElementById('intakeForm');
