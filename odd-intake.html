@@ -217,6 +217,15 @@
   }
 
   function measureHeight() {
+    // If success screen is visible, measure only that
+    const successScreen = document.getElementById('successScreen');
+    if (successScreen && successScreen.style.display === 'block') {
+      const rect = successScreen.getBoundingClientRect();
+      const padding = 48; // Account for container padding
+      return Math.ceil(rect.height + padding);
+    }
+    
+    // Otherwise measure the full container
     const root = document.querySelector('.max-w-4xl');
     const pad = 12;
     if (root) {
