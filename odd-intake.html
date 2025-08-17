@@ -194,7 +194,7 @@
     async function loadCatalog() {
       showElement('loading-screen');
       try {
-        const res = await fetch('/_functions/catalog');
+        const res = await fetch('https://www.onedaydance.com/_functions/catalog');  // Changed to absolute URL
         if (!res.ok) throw new Error('Catalog fetch failed');
         catalog = await res.json();
         if (catalog.services.length === 0 || catalog.pricing.length === 0) {
@@ -672,7 +672,7 @@
       const data = buildPayload();
 
       try {
-        const res = await fetch('/_functions/submit', {
+        const res = await fetch('https://www.onedaydance.com/_functions/submit', {  // Changed to absolute URL
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
