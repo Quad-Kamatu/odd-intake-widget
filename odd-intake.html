@@ -13,7 +13,7 @@
       --c4:#FFE176; /* saffron */
     }
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-    html, body { height: 100%; margin:0; padding:0; background:transparent; }
+    html, body { height: auto; margin:0; padding:0; background:transparent; }
     body{ color:#111; position:relative; }
     /* Fluid, shifting gradient background */
     html::before{
@@ -73,8 +73,8 @@
   </style>
 </head>
 <body class="text-gray-900">
-  <div class="max-w-4xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold mb-6 page-title">Service Request</h1>
+  <div class="max-w-4xl mx-auto px-4 py-6 bg-white rounded-lg shadow-md space-y-6">
+    <h1 class="text-2xl font-bold page-title">Service Request</h1>
 
     <!-- Loading Screen -->
     <div id="loading-screen" class="text-center py-12">
@@ -119,7 +119,7 @@
           <div>
             <h2 class="text-xl font-semibold mb-2">Discount Qualification</h2>
             <p class="mb-2 text-sm text-gray-600">Do you qualify for one of these discounts? (select one)</p>
-            <div class="space-y-2 text-sm">
+            <div class="space-y-2">
               <label class="flex items-center">
                 <input type="radio" name="discountCategory" value="none" checked class="mr-2 focus:ring-blue-500"> None
               </label>
@@ -208,6 +208,7 @@
     let catalog = { services: [], pricing: [], addons: [] };
     let serviceCards = [];
     let discountRates = { none: 0, student: 0.10, nonprofit: 0.10, 'odd-artist': 0.20 };
+    let lastSentHeight = 0;
 
     // Utility functions
     function showElement(id) {
@@ -235,7 +236,7 @@
       if (errorElem) errorElem.classList.add('hidden');
     }
 
-    // Height update function
+    // Height update function with change check to prevent loops
     function updateHeight() {
       const height = Math.max(
         document.body.scrollHeight,
@@ -243,7 +244,10 @@
         document.body.offsetHeight,
         document.documentElement.offsetHeight
       );
-      parent.postMessage({ type: 'ODD_FORM_HEIGHT', height: height + 20 }, '*');
+      if (Math.abs(height - lastSentHeight) > 5) {  // Only send if changed by more than 5px
+        parent.postMessage({ type: 'ODD_FORM_HEIGHT', height: height + 20 }, '*');
+        lastSentHeight = height;
+      }
     }
 
     // Debounced update height
@@ -291,7 +295,7 @@
         <div class="row">
           <label class="block">
             <span class="lbl">Service Type *</span>
-            <select class="service-category inp">
+            <select class="service-category inp" required>
               <option value="">Select Category</option>
               ${catalog.services.map(s => `<option value="${s.serviceKey}">${s.serviceName || s.serviceKey}</option>`).join('')}
             </select>
@@ -299,7 +303,7 @@
           </label>
           <label class="block">
             <span class="lbl">Service *</span>
-            <select class="service-offering inp" disabled>
+            <select class="service-offering inp" disabled required>
               <option value="">Select Service</option>
             </select>
             <p class="error-message hidden" data-error-for="offering-${cardIndex}">Service is required.</p>
@@ -309,18 +313,18 @@
           <div class="row">
             <label class="block">
               <span class="lbl">Date *</span>
-              <input type="date" class="service-date inp">
+              <input type="date" class="service-date inp" required>
               <p class="error-message hidden" data-error-for="date-${cardIndex}">Date is required for events.</p>
             </label>
             <label class="block">
               <span class="lbl">Time *</span>
-              <input type="time" class="service-time inp">
+              <input type="time" class="service-time inp" required>
               <p class="error-message hidden" data-error-for="time-${cardIndex}">Time is required for events.</p>
             </label>
           </div>
           <label class="block">
             <span class="lbl">Venue Address *</span>
-            <input type="text" class="service-location inp">
+            <input type="text" class="service-location inp" required>
             <p class="error-message hidden" data-error-for="location-${cardIndex}">Location is required for events.</p>
           </label>
         </div>
@@ -328,7 +332,7 @@
         <div class="complexity-fields hidden">
           <label class="block">
             <span class="lbl">Editing Complexity *</span>
-            <select class="service-complexity inp">
+            <select class="service-complexity inp" required>
               <option value="">Select Complexity</option>
               <option value="simple">Simple</option>
               <option value="moderate">Moderate</option>
@@ -360,7 +364,7 @@
       document.getElementById('service-cards').appendChild(card);
       serviceCards.push(card);
 
-      // Event listeners...
+      // Event listeners for this card
       const categorySelect = card.querySelector('.service-category');
       const offeringSelect = card.querySelector('.service-offering');
       const eventFields = card.querySelector('.event-fields');
@@ -395,7 +399,7 @@
           quantityHtml = `
             <label class="block">
               <span class="lbl">Hours *</span>
-              <input type="number" min="1" class="service-hours inp">
+              <input type="number" min="1" class="service-hours inp" required>
               <p class="error-message hidden" data-error-for="hours-${cardIndex}">Hours are required.</p>
             </label>
           `;
@@ -403,7 +407,7 @@
           quantityHtml = `
             <label class="block">
               <span class="lbl">Film Length (minutes) *</span>
-              <input type="range" class="filmSlider service-units" min="1" max="30" value="5" step="1">
+              <input type="range" class="filmSlider service-units" min="1" max="30" value="5" step="1" required>
               <p class="error-message hidden" data-error-for="units-${cardIndex}">Film length is required.</p>
             </label>
           `;
@@ -411,7 +415,7 @@
           quantityHtml = `
             <label class="block">
               <span class="lbl">Headshots *</span>
-              <input type="number" min="1" class="service-units inp">
+              <input type="number" min="1" class="service-units inp" required>
               <p class="error-message hidden" data-error-for="units-${cardIndex}">Number of headshots is required.</p>
             </label>
           `;
@@ -425,13 +429,6 @@
 
         if (offering.hasComplexity) {
           complexityFields.classList.remove('hidden');
-          const complexitySelect = complexityFields.querySelector('.service-complexity');
-          complexitySelect.addEventListener('change', (ev) => {
-            const level = ev.target.value;
-            const desc = offering.complexityTexts[level] || '';
-            complexityFields.querySelector('.complexity-description').textContent = desc;
-            updateEstimate();
-          });
         } else {
           complexityFields.classList.add('hidden');
         }
@@ -480,17 +477,9 @@
         triggerHeightUpdates();
       });
 
-      // Add input and change listeners for the card
-      card.addEventListener('input', () => {
-        updateEstimate();
-        triggerHeightUpdates();
-      });
-      card.addEventListener('change', () => {
-        updateEstimate();
-        triggerHeightUpdates();
-      });
+      card.addEventListener('input', updateEstimate);
+      card.addEventListener('change', updateEstimate);
 
-      // Remove service if not primary
       if (!isPrimary) {
         card.querySelector('.remove-service').addEventListener('click', () => {
           card.remove();
@@ -502,7 +491,6 @@
 
       triggerHeightUpdates();
     }
-
     // Update estimate
     function updateEstimate() {
       let total = 0;
