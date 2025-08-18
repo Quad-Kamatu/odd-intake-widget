@@ -17,23 +17,25 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.minHeight = `${minHAttr}px`;
     shadow.appendChild(iframe);
 
-    // Height management - FIXED to properly handle reductions
-    let pendingHeightUpdate = null;
+    // Height management - COMPLETELY REWRITTEN for proper shrinking
+    let currentHeight = minHAttr;
+    let heightAnimationFrame = null;
     
     const applyHeight = (newHeight) => {
       const px = Math.max(minHAttr, Math.round(Number(newHeight) || 0));
       
-      // Clear any pending height update
-      if (pendingHeightUpdate) {
-        cancelAnimationFrame(pendingHeightUpdate);
+      // Cancel any pending height update
+      if (heightAnimationFrame) {
+        cancelAnimationFrame(heightAnimationFrame);
       }
       
-      // Apply height change immediately in the next frame
-      pendingHeightUpdate = requestAnimationFrame(() => {
+      // Apply height change immediately - no restrictions on reduction
+      heightAnimationFrame = requestAnimationFrame(() => {
         iframe.style.height = `${px}px`;
-        pendingHeightUpdate = null;
+        currentHeight = px;
+        heightAnimationFrame = null;
         
-        // Force a reflow to ensure the change is applied
+        // Force layout recalculation
         iframe.offsetHeight;
       });
     };
@@ -53,11 +55,12 @@ class OddIntakeElement extends HTMLElement {
         } else if (typeof data.oddIntakeHeight === 'number') {
           h = data.oddIntakeHeight;
         } else if (data.type === 'ODD_FORM_SUCCESS' && typeof data.height === 'number') {
-          // Success screen often has a different height
+          // Success screen height should be applied immediately
           h = data.height;
         }
       }
 
+      // Apply ANY valid height change - no minimum difference required
       if (h != null && h > 0) {
         applyHeight(h);
       }
@@ -65,11 +68,8 @@ class OddIntakeElement extends HTMLElement {
 
     // Initial height setup
     iframe.addEventListener('load', () => {
-      // Give the form a moment to render
-      setTimeout(() => {
-        // Set initial height to minimum, let the form tell us its actual size
-        iframe.style.height = `${minHAttr}px`;
-      }, 100);
+      // Start with minimum height and let the form tell us its actual size
+      applyHeight(minHAttr);
     });
   }
 
@@ -86,6 +86,11 @@ class OddIntakeElement extends HTMLElement {
       const minH = Math.max(320, Number(newVal) || 320);
       if (iframe) {
         iframe.style.minHeight = `${minH}px`;
+        // If current height is below new minimum, adjust it
+        const currentPx = parseInt(iframe.style.height) || minH;
+        if (currentPx < minH) {
+          iframe.style.height = `${minH}px`;
+        }
       }
     }
   }
