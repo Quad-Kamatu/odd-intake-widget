@@ -180,7 +180,7 @@
     </form>
 
     <div id="successScreen" class="card" style="display:none;">
-      <h2 class="text-xl font-semibold mb-2">Thanks â€" your request was sent!</h2>
+      <h2 class="text-xl font-semibold mb-2">Thanks – your request was sent!</h2>
       <p class="text-sm text-gray-700 mb-4">We'll follow up by email shortly.</p>
       <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
       <div class="mt-4">
@@ -198,17 +198,16 @@
   };
   const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
 
-  // -------- HEIGHT MESSAGING (FIXED) --------
+  // -------- HEIGHT MESSAGING (COMPLETELY FIXED) --------
   let currentHeight = 0;
   let heightRequestId = null;
-  let debouncedSendHeight = null;
 
   function postHeights(px) {
     try {
       const ts = Date.now();
       const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
       const msgLegacy = { oddIntakeHeight: px, ts };
-      if (window.parent) {
+      if (window.parent && window.parent !== window) {
         (ALLOWED_PARENTS||[]).forEach(origin=>{
           try { window.parent.postMessage(msgStd, origin); } catch(_) {/*noop*/}
           try { window.parent.postMessage(msgLegacy, origin); } catch(_) {/*noop*/}
@@ -218,51 +217,56 @@
   }
 
   function measureHeight() {
-    // Force a layout recalculation first
+    // Force layout recalculation
     document.body.offsetHeight;
     
-    // If success screen is visible, measure only that
+    // Special handling for success screen
     const successScreen = document.getElementById('successScreen');
-    if (successScreen && successScreen.style.display === 'block') {
-      const rect = successScreen.getBoundingClientRect();
-      const padding = 48; // Account for container padding
-      return Math.ceil(rect.height + padding);
+    if (successScreen && successScreen.style.display !== 'none') {
+      // Measure success screen plus padding
+      const containerPadding = 48; // Account for body padding
+      const successHeight = successScreen.getBoundingClientRect().height;
+      const headerHeight = document.getElementById('pageHeader')?.getBoundingClientRect().height || 0;
+      return Math.ceil(successHeight + headerHeight + containerPadding);
     }
     
-    // Otherwise measure the full container - use scrollHeight for accurate measurement
-    const root = document.querySelector('.max-w-4xl');
-    const pad = 12;
-    if (root) {
-      // Use scrollHeight which gives the actual content height regardless of viewport
-      const scrollH = Math.ceil(root.scrollHeight + pad);
-      const docScrollH = Math.ceil(document.documentElement.scrollHeight || 0);
-      const bodyScrollH = Math.ceil(document.body.scrollHeight || 0);
+    // Measure the actual content height using multiple methods for accuracy
+    const container = document.querySelector('.max-w-4xl');
+    if (container) {
+      // Get the actual content bounds
+      const containerRect = container.getBoundingClientRect();
+      const containerScrollHeight = container.scrollHeight;
       
-      // Return the maximum but don't impose a minimum height for shrinking
-      return Math.max(scrollH, docScrollH, bodyScrollH);
+      // Use the larger of the two measurements
+      let contentHeight = Math.max(containerRect.height, containerScrollHeight);
+      
+      // Add body padding
+      const bodyPadding = 24; // Based on p-6 class (1.5rem = 24px)
+      contentHeight += bodyPadding;
+      
+      return Math.ceil(contentHeight);
     }
     
     // Fallback measurements
-    const d = document.documentElement;
-    const b = document.body;
-    return Math.max(
-      Math.ceil(d?.scrollHeight || 0),
-      Math.ceil(b?.scrollHeight || 0),
-      300 // Reduced minimum height to allow proper shrinking
-    );
+    const docHeight = document.documentElement.scrollHeight;
+    const bodyHeight = document.body.scrollHeight;
+    return Math.ceil(Math.max(docHeight, bodyHeight, 200));
   }
 
   function sendHeight() {
-    // Cancel any pending height updates
+    // Cancel any pending updates
     if (heightRequestId) {
       cancelAnimationFrame(heightRequestId);
+      heightRequestId = null;
     }
     
     heightRequestId = requestAnimationFrame(() => {
       try {
         const newHeight = measureHeight();
-        // Always send height changes, even small ones, to ensure shrinking works
-        if (newHeight !== currentHeight) {
+        
+        // FIXED: Always send height updates, even when shrinking
+        // The old code had logic that prevented shrinking - removed that
+        if (Math.abs(newHeight - currentHeight) > 1) { // Only skip tiny changes
           currentHeight = newHeight;
           postHeights(newHeight);
         }
@@ -273,33 +277,22 @@
     });
   }
 
-  // Create debounced version with shorter delay for better responsiveness
-  function createDebouncedSendHeight() {
-    let timeoutId = null;
-    return function() {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(sendHeight, 50); // Reduced from implicit longer delay
-    };
+  // Immediate height sending for critical updates
+  function sendHeightImmediate() {
+    try {
+      const newHeight = measureHeight();
+      currentHeight = newHeight;
+      postHeights(newHeight);
+    } catch(e) {
+      console.warn('Immediate height measurement error:', e);
+    }
   }
 
-  // Initial height sending with better reliability
-  function sendInitialHeight() {
-    // Send height immediately
-    sendHeight();
-    
-    // Wait for fonts and images to load
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        setTimeout(sendHeight, 50);
-        setTimeout(sendHeight, 150);
-      });
-    }
-    
-    // Fallback for older browsers
-    setTimeout(sendHeight, 100);
-    setTimeout(sendHeight, 300);
-    setTimeout(sendHeight, 600);
-    setTimeout(sendHeight, 1200);
+  // Debounced version for frequent events
+  let debounceTimer = null;
+  function sendHeightDebounced() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(sendHeight, 16); // ~60fps
   }
 
   // -------- UTILS --------
@@ -352,7 +345,7 @@
           with your request while we resolve this.
         </p>
       </div>`;
-    sendHeight();
+    sendHeightImmediate();
   }
 
   // -------- SERVICE CARD --------
@@ -464,7 +457,7 @@
       const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
       subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
       subSel.disabled = false; svc.serviceKey = key; svc.subType = ''; svc.offeringId='';
-      resetServiceUI(); updateQuote(); updateSubmitState(); debouncedSendHeight();
+      resetServiceUI(); updateQuote(); updateSubmitState(); sendHeight();
     }
 
     function renderComplexity(meta){
@@ -533,7 +526,7 @@
         }
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
+        // For per-minute services that need hours estimate – except Additional Camera which inherits service hours
         if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
           const hoursWrap = document.createElement('label'); hoursWrap.className='block';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
@@ -560,7 +553,7 @@
 
     function toggleForSub(){
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-      if (!meta){ resetServiceUI(); updateSubmitState(); debouncedSendHeight(); return; }
+      if (!meta){ resetServiceUI(); updateSubmitState(); sendHeight(); return; }
 
       // Basic flags
       const unit = meta.priceUnit || 'flat';
@@ -596,7 +589,7 @@
       renderAddons({ ...meta, offeringId: svc.offeringId });
 
       const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
-      updateSubmitState(); debouncedSendHeight();
+      updateSubmitState(); sendHeight();
     }
 
     // Listeners
@@ -628,7 +621,7 @@
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); debouncedSendHeight(); }); }
+    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); sendHeightImmediate(); }); }
 
     return wrap;
   }
@@ -678,7 +671,7 @@
               : 1;
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
-    lines.push(`Base (${esc(meta.subType)} — ${esc(unit)}): ${money(base)}${meta.startingAt?'+':''}`);
+    lines.push(`Base (${esc(meta.subType)} – ${esc(unit)}): ${money(base)}${meta.startingAt?'+':''}`);
 
     // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
     let setupFee = 0;
@@ -712,11 +705,12 @@
       grand += res.subtotal; breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
     });
 
-    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; updateSubmitState(); debouncedSendHeight(); return; }
+    if (grand===0){ $('#quoteTotal').textContent = '$0.00'; $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">–</div>'; updateSubmitState(); sendHeight(); return; }
     const best = bestDiscountPercent(); if (best>0) breakdown.push(`Discount (${best}%): -${money(grand*(best/100))}`);
     const total = Math.max(0, grand * (1 - best/100));
-    $('#quoteTotal').textContent = `${money(total)}`; $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
-    updateSubmitState(); debouncedSendHeight();
+    $('#quoteTotal').textContent = `${money(total)}`;
+    $('#quoteBreakdown').innerHTML = breakdown.map(l=>`<div>• ${esc(l)}</div>`).join('');
+    updateSubmitState(); sendHeight();
   }
 
   function updateSubmitState(){
@@ -762,9 +756,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
-    // Initialize debounced function
-    debouncedSendHeight = createDebouncedSendHeight();
-
     // 1) Load catalog or show fatal
     try{
       const ok = await loadCatalog();
@@ -777,42 +768,50 @@
 
     // 2) Build primary service card
     addServiceCard(true);
-    
-    // 2.5) Send initial height with better reliability
-    sendInitialHeight();
 
-    // 3) Setup height observers with improved reliability
+    // 3) Setup height observers - IMPROVED VERSION
     try {
-      // Observe specific elements that affect form size
+      // Use ResizeObserver for better performance
       if (window.ResizeObserver) {
-        const ro = new ResizeObserver(sendHeight);
-        const elementsToObserve = [
-          document.querySelector('.max-w-4xl'),
-          document.getElementById('servicesContainer'),
-          document.getElementById('identityCard'),
-          document.getElementById('successScreen')
-        ].filter(Boolean);
+        const ro = new ResizeObserver(() => sendHeightDebounced());
         
-        elementsToObserve.forEach(el => ro.observe(el));
+        // Observe the main container
+        const container = document.querySelector('.max-w-4xl');
+        if (container) ro.observe(container);
+        
+        // Observe dynamic content containers
+        const servicesContainer = document.getElementById('servicesContainer');
+        if (servicesContainer) ro.observe(servicesContainer);
       }
 
-      // Use debounced version for input events to prevent excessive calls
-      document.addEventListener('input', debouncedSendHeight);
-      document.addEventListener('change', debouncedSendHeight);
+      // Use debounced version for input events
+      document.addEventListener('input', sendHeightDebounced);
+      document.addEventListener('change', sendHeightDebounced);
       
       // Handle window events
-      window.addEventListener('load', sendInitialHeight);
-      window.addEventListener('resize', debouncedSendHeight);
+      window.addEventListener('resize', sendHeightDebounced);
+      
+      // Send initial height
+      setTimeout(() => sendHeightImmediate(), 100);
+      setTimeout(() => sendHeightImmediate(), 300);
       
     } catch(e) {
       console.warn('Height observer setup failed:', e);
+      // Fallback to periodic height checks
+      setInterval(sendHeight, 1000);
     }
 
     // 4) Discount listeners
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
 
     // 5) Add another service
-    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ addServiceCard(false); updateQuote(); updateSubmitState(); debouncedSendHeight(); });
+    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ 
+      addServiceCard(false); 
+      updateQuote(); 
+      updateSubmitState(); 
+      // Use immediate height update for major layout changes
+      setTimeout(() => sendHeightImmediate(), 50);
+    });
 
     // 6) Form validation hooks
     const formEl = document.getElementById('intakeForm');
@@ -856,7 +855,7 @@
         const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
 
-        // Hide both the identity card and form on success
+        // Hide form elements
         document.getElementById('identityCard').style.display = 'none';
         document.getElementById('intakeForm').style.display = 'none';
         
@@ -864,34 +863,22 @@
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
           document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
+          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} – your request was sent!`;
           success.style.display = 'block';
         }
         
-        // Force layout recalculation and multiple height updates
-        requestAnimationFrame(() => {
-          // Force reflow
-          document.body.offsetHeight;
-          
-          // Update height immediately and with delays
-          sendHeight();
-          
-          setTimeout(() => {
-            sendHeight();
-            
-            // Send success message with current height
-            const nowH = measureHeight();
-            (ALLOWED_PARENTS||[]).forEach(origin=>{ 
-              try{ 
-                window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); 
-              }catch(_){/*noop*/} 
-            });
-          }, 100);
-          
-          setTimeout(sendHeight, 250);
-          setTimeout(sendHeight, 500);
-          setTimeout(sendHeight, 1000);
-        });
+        // CRITICAL: Use immediate height update for success screen
+        sendHeightImmediate();
+        
+        // Send success message with height
+        setTimeout(() => {
+          const nowH = measureHeight();
+          (ALLOWED_PARENTS||[]).forEach(origin=>{ 
+            try{ 
+              window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); 
+            }catch(_){/*noop*/} 
+          });
+        }, 100);
         
       }catch(err){ 
         console.error(err); 
@@ -905,8 +892,8 @@
 
     updateSubmitState();
     
-    // Final robust initial height measurement
-    sendInitialHeight();
+    // Final initial height
+    sendHeightImmediate();
   });
   </script>
 </body>
