@@ -443,9 +443,9 @@
       const filmEl=wrap.querySelector('.filmSlider'); if(filmEl){ filmEl.value=1; updateSliderFill(filmEl); }
       const help=wrap.querySelector('.help'); if(help) help.textContent='';
       wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-      const hide = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
+        const hide = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
       hide('.addonsWrap'); wrap.querySelector('.addonsList').innerHTML='';
-      hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow');
+      hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow'); hide('.audioWrap');
       const dateEl=wrap.querySelector('.date'); if(dateEl){ dateEl.value=''; dateEl.required=false; }
       const timeEl=wrap.querySelector('.time'); if(timeEl){ timeEl.value=''; timeEl.required=false; }
       const locEl=wrap.querySelector('.location'); if(locEl){ locEl.value=''; locEl.required=false; }
