@@ -14,37 +14,35 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.border = '0';
     iframe.style.display = 'block';
     iframe.setAttribute('scrolling', 'no');
-    iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
+    iframe.style.minHeight = `${minHAttr}px`;
     shadow.appendChild(iframe);
 
-    // Height management - FIXED to allow reductions
-    let lastApplied = minHAttr;
-    let applyTimer = null;
+    // Height management - FIXED to properly handle reductions
+    let pendingHeightUpdate = null;
     
     const applyHeight = (newHeight) => {
       const px = Math.max(minHAttr, Math.round(Number(newHeight) || 0));
       
-      // REMOVED the 3px difference check - this was preventing height reductions!
-      // Apply ALL height changes to ensure both increases and decreases work
+      // Clear any pending height update
+      if (pendingHeightUpdate) {
+        cancelAnimationFrame(pendingHeightUpdate);
+      }
       
-      lastApplied = px;
-      
-      // Clear any pending timer
-      clearTimeout(applyTimer);
-      
-      // Apply the height change immediately
-      requestAnimationFrame(() => {
+      // Apply height change immediately in the next frame
+      pendingHeightUpdate = requestAnimationFrame(() => {
         iframe.style.height = `${px}px`;
+        pendingHeightUpdate = null;
         
-        // Small delayed follow-up to ensure the change sticks
-        applyTimer = setTimeout(() => {
-          iframe.style.height = `${px}px`;
-        }, 50);
+        // Force a reflow to ensure the change is applied
+        iframe.offsetHeight;
       });
     };
 
     // Receive height from the form and resize the element
     window.addEventListener('message', (e) => {
+      // Verify the message is from our iframe
+      if (e.source !== iframe.contentWindow) return;
+      
       const data = e?.data || {};
 
       // Accept both new and legacy height message formats
@@ -67,10 +65,11 @@ class OddIntakeElement extends HTMLElement {
 
     // Initial height setup
     iframe.addEventListener('load', () => {
-      // Give the form a moment to render, then request initial height
+      // Give the form a moment to render
       setTimeout(() => {
-        applyHeight(minHAttr + 50); // Small buffer for initial render
-      }, 200);
+        // Set initial height to minimum, let the form tell us its actual size
+        iframe.style.height = `${minHAttr}px`;
+      }, 100);
     });
   }
 
