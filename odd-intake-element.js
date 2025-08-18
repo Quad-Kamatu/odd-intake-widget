@@ -17,35 +17,29 @@ class OddIntakeElement extends HTMLElement {
     iframe.style.minHeight = `${minHAttr}px`; // sensible minimum so it never collapses
     shadow.appendChild(iframe);
 
-    // Height management with improved reliability
+    // Height management - FIXED to allow reductions
     let lastApplied = minHAttr;
     let applyTimer = null;
-    let isUpdating = false;
     
     const applyHeight = (newHeight) => {
-      if (isUpdating) return;
-      
       const px = Math.max(minHAttr, Math.round(Number(newHeight) || 0));
       
-      // Only apply if the change is meaningful (more than 3px difference)
-      if (Math.abs(px - lastApplied) < 3) return;
+      // REMOVED the 3px difference check - this was preventing height reductions!
+      // Apply ALL height changes to ensure both increases and decreases work
       
-      isUpdating = true;
       lastApplied = px;
       
-      // Apply the height change
+      // Clear any pending timer
+      clearTimeout(applyTimer);
+      
+      // Apply the height change immediately
       requestAnimationFrame(() => {
         iframe.style.height = `${px}px`;
         
-        // Clear any pending timer
-        clearTimeout(applyTimer);
-        
-        // Small delayed follow-up to catch late layout shifts
+        // Small delayed follow-up to ensure the change sticks
         applyTimer = setTimeout(() => {
-          const finalHeight = Math.max(minHAttr, Math.round(Number(lastApplied)));
-          iframe.style.height = `${finalHeight}px`;
-          isUpdating = false;
-        }, 100);
+          iframe.style.height = `${px}px`;
+        }, 50);
       });
     };
 
