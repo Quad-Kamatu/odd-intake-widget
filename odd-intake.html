@@ -799,8 +799,8 @@
     console.log('updateQuote called, services:', state.services); // Debug
     
     const breakdown = []; 
+    const chartData = []; // For donut chart - now tracks individual line items
     let grand = 0;
-    const chartData = []; // For donut chart
     
     state.services.forEach((svc, idx)=>{
       console.log(`Processing service ${idx}:`, svc); // Debug
@@ -815,18 +815,24 @@
       
       grand += res.subtotal; 
       
-      // Add to chart data if there's a cost
-      if (res.subtotal > 0) {
-        chartData.push({
-          label: idx === 0 ? 'Primary Service' : `Service ${idx + 1}`,
-          value: res.subtotal
-        });
-      }
-      
-      // Add all lines from this service
+      // Add each line item to both breakdown and chart data
       res.lines.forEach(line => {
         const prefixedLine = (idx > 0 ? `Service ${idx + 1}: ` : '') + line;
         breakdown.push(prefixedLine);
+        
+        // Extract cost from line item for chart
+        const costMatch = line.match(/\$?([\d,]+\.?\d*)/);
+        if (costMatch) {
+          const cost = parseFloat(costMatch[1].replace(/,/g, ''));
+          if (cost > 0) {
+            // Clean up label for chart (remove cost part)
+            const cleanLabel = line.replace(/:\s*\$?[\d,]+\.?\d*\+?$/, '').trim();
+            chartData.push({
+              label: cleanLabel,
+              value: cost
+            });
+          }
+        }
       });
     });
 
@@ -852,13 +858,15 @@
     if (best > 0) {
       discountAmount = grand * (best / 100);
       breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
+      // Add discount as negative value to chart (but don't show it)
+      // We'll handle discount display separately
     }
     
     const total = Math.max(0, grand * (1 - best/100));
     $('#quoteTotal').textContent = `${money(total)}`;
     $('#chartTotal').textContent = `${money(total)}`;
     
-    // Create breakdown with color indicators - simplified approach
+    // Create breakdown with color indicators matching chart
     const coloredBreakdown = breakdown.map((line, idx) => {
       const isDiscount = line.includes('Discount');
       const color = isDiscount ? '#10b981' : CHART_COLORS[idx % CHART_COLORS.length];
@@ -871,7 +879,7 @@
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
     
-    // Update donut chart
+    // Update donut chart with line items
     const canvas = document.getElementById('donutChart');
     if (canvas) {
       if (chartData.length > 0) {
