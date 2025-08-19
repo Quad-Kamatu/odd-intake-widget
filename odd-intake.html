@@ -820,17 +820,19 @@
         const prefixedLine = (idx > 0 ? `Service ${idx + 1}: ` : '') + line;
         breakdown.push(prefixedLine);
         
-        // Extract cost from line item for chart
-        const costMatch = line.match(/\$?([\d,]+\.?\d*)/);
+        // Extract cost from line item for chart - improved regex
+        const costMatch = line.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
         if (costMatch) {
           const cost = parseFloat(costMatch[1].replace(/,/g, ''));
           if (cost > 0) {
-            // Clean up label for chart (remove cost part)
-            const cleanLabel = line.replace(/:\s*\$?[\d,]+\.?\d*\+?$/, '').trim();
+            // Clean up label for chart (remove the cost portion)
+            const cleanLabel = line.replace(/:\s*\$\d+(?:,\d{3})*(?:\.\d{2})?\+?$/, '').trim();
+            const finalLabel = (idx > 0 ? `Service ${idx + 1}: ` : '') + cleanLabel;
             chartData.push({
-              label: cleanLabel,
+              label: finalLabel,
               value: cost
             });
+            console.log(`Added chart item: ${finalLabel} = $${cost}`); // Debug
           }
         }
       });
@@ -866,15 +868,25 @@
     $('#quoteTotal').textContent = `${money(total)}`;
     $('#chartTotal').textContent = `${money(total)}`;
     
-    // Create breakdown with color indicators matching chart
+    // Create breakdown with color indicators matching chart slices
     const coloredBreakdown = breakdown.map((line, idx) => {
       const isDiscount = line.includes('Discount');
-      const color = isDiscount ? '#10b981' : CHART_COLORS[idx % CHART_COLORS.length];
-      
-      return `<div class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-        <span class="${isDiscount ? 'text-green-600' : ''}">• ${esc(line)}</span>
-      </div>`;
+      // Find the corresponding chart data index for this breakdown line
+      let chartIndex = idx;
+      if (isDiscount) {
+        // Discounts don't appear in chart, use green
+        return `<div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: #10b981"></div>
+          <span class="text-green-600">• ${esc(line)}</span>
+        </div>`;
+      } else {
+        // Use chart color if we have chart data for this line
+        const color = chartData[chartIndex] ? CHART_COLORS[chartIndex % CHART_COLORS.length] : '#6b7280';
+        return `<div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
+          <span>• ${esc(line)}</span>
+        </div>`;
+      }
     }).join('');
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
