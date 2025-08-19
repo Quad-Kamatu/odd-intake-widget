@@ -336,7 +336,17 @@
 
   // -------- DONUT CHART --------
   function createDonutChart(canvas, data, colors) {
+    if (!canvas) {
+      console.warn('Canvas element not found');
+      return;
+    }
+    
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.warn('Could not get 2D context from canvas');
+      return;
+    }
+    
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const outerRadius = 50;
@@ -527,9 +537,25 @@
     function refreshSubs(){
       const key = typeSel.value;
       const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
-      subSel.disabled = false; svc.serviceKey = key; svc.subType = ''; svc.offeringId='';
-      resetServiceUI(); updateQuote(); updateSubmitState(); sendHeight();
+      subSel.innerHTML = '<option value="" disabled>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
+      subSel.disabled = false; 
+      svc.serviceKey = key; 
+      
+      // FIX: Auto-select first service for immediate quote display
+      if (subs.length > 0) {
+        svc.offeringId = subs[0].offeringId;
+        svc.subType = subs[0].subType;
+        subSel.value = subs[0].offeringId;
+        toggleForSub(); // Configure UI for the selected service
+      } else {
+        svc.subType = '';
+        svc.offeringId = '';
+      }
+      
+      resetServiceUI(); 
+      updateQuote(); 
+      updateSubmitState(); 
+      sendHeight();
     }
 
     function renderComplexity(meta){
