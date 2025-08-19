@@ -350,24 +350,31 @@
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) return;
     
+    console.log('Drawing chart - Total:', total, 'Data:', data); // Debug log
+    
     let currentAngle = -Math.PI / 2; // Start at top
     
     data.forEach((item, index) => {
       const sliceAngle = (item.value / total) * 2 * Math.PI;
       const color = colors[index % colors.length];
       
-      // Draw slice
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, outerRadius, currentAngle, currentAngle + sliceAngle);
-      ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
+      console.log(`Slice ${index}: ${item.label} = ${item.value} (${(item.value/total*100).toFixed(1)}%) - angle: ${sliceAngle}`);
       
-      // Add subtle border
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      // Only draw if there's a meaningful slice
+      if (sliceAngle > 0.01) {
+        // Draw slice
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, currentAngle, currentAngle + sliceAngle);
+        ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        
+        // Add subtle border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
       
       currentAngle += sliceAngle;
     });
