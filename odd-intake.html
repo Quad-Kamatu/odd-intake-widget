@@ -770,32 +770,27 @@
   }
 
   function updateQuote(){
-    // Create breakdown items with their costs for proper chart mapping
-    const breakdownItems = []; 
+    const breakdown = []; 
     let grand = 0;
+    const chartData = []; // For donut chart
     
     state.services.forEach((svc, idx)=>{
       if (!svc.offeringId) return;
       const res = costForService(svc);
       grand += res.subtotal; 
       
-      // Add each line item with its individual cost
-      res.lines.forEach(line => {
-        // Extract cost from line (format: "Description: $XX.XX")
-        const costMatch = line.match(/\$(\d+(?:\.\d{2})?)/);
-        const cost = costMatch ? parseFloat(costMatch[1]) : 0;
-        
-        if (cost > 0) {
-          breakdownItems.push({
-            label: (idx > 0 ? `Service ${idx + 1}: ` : '') + line.split(':')[0].trim(),
-            cost: cost,
-            fullLine: (idx > 0 ? `Service ${idx + 1}: ` : '') + line
-          });
-        }
-      });
+      // Add to chart data if there's a cost
+      if (res.subtotal > 0) {
+        chartData.push({
+          label: idx === 0 ? 'Primary Service' : `Service ${idx + 1}`,
+          value: res.subtotal
+        });
+      }
+      
+      breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
     });
 
-    if (grand === 0){ 
+    if (grand===0){ 
       $('#quoteTotal').textContent = '$0.00'; 
       $('#chartTotal').textContent = '$0';
       $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; 
@@ -807,42 +802,40 @@
     
     const best = bestDiscountPercent(); 
     let discountAmount = 0;
-    
     if (best > 0) {
       discountAmount = grand * (best / 100);
-      breakdownItems.push({
-        label: `Discount (${best}%)`,
-        cost: discountAmount, // Keep as positive for chart proportions
-        fullLine: `Discount (${best}%): -${money(discountAmount)}`,
-        isDiscount: true
-      });
+      breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
     }
     
     const total = Math.max(0, grand * (1 - best/100));
     $('#quoteTotal').textContent = `${money(total)}`;
     $('#chartTotal').textContent = `${money(total)}`;
     
-    // Create chart data from breakdown items
-    const chartData = breakdownItems.filter(item => !item.isDiscount).map(item => ({
-      label: item.label,
-      value: item.cost
-    }));
-    
-    // Create breakdown with proper color mapping
-    const coloredBreakdown = breakdownItems.map((item, idx) => {
-      // For chart colors, only count non-discount items
-      const chartIndex = breakdownItems.slice(0, idx).filter(i => !i.isDiscount).length;
-      const color = item.isDiscount ? '#10b981' : CHART_COLORS[chartIndex % CHART_COLORS.length]; // Green for discount
+    // Create breakdown with color indicators
+    const coloredBreakdown = breakdown.map((line, idx) => {
+      // Assign colors sequentially, but use green for discount
+      const isDiscount = line.includes('Discount');
+      let color;
+      
+      if (isDiscount) {
+        color = '#10b981'; // Green for discount
+      } else {
+        // For service costs, use colors based on chart data index
+        const serviceLines = breakdown.filter(l => !l.includes('Discount'));
+        const serviceIdx = serviceLines.indexOf(line);
+        const chartIdx = Math.floor(serviceIdx / (serviceLines.length / Math.max(1, chartData.length)));
+        color = CHART_COLORS[chartIdx % CHART_COLORS.length];
+      }
       
       return `<div class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-        <span class="${item.isDiscount ? 'text-green-600' : ''}">• ${esc(item.fullLine)}</span>
+        <span class="${isDiscount ? 'text-green-600' : ''}">• ${esc(line)}</span>
       </div>`;
     }).join('');
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
     
-    // Update donut chart with non-discount items only
+    // Update donut chart - only show positive values (services, not discount)
     const canvas = document.getElementById('donutChart');
     if (canvas && chartData.length > 0) {
       createDonutChart(canvas, chartData, CHART_COLORS);
