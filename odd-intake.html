@@ -770,13 +770,23 @@
   }
 
   function updateQuote(){
+    console.log('updateQuote called, services:', state.services); // Debug
+    
     const breakdown = []; 
     let grand = 0;
     const chartData = []; // For donut chart
     
     state.services.forEach((svc, idx)=>{
-      if (!svc.offeringId) return;
+      console.log(`Processing service ${idx}:`, svc); // Debug
+      
+      if (!svc.offeringId) {
+        console.log(`Service ${idx} has no offeringId, skipping`); // Debug
+        return;
+      }
+      
       const res = costForService(svc);
+      console.log(`Service ${idx} cost result:`, res); // Debug
+      
       grand += res.subtotal; 
       
       // Add to chart data if there's a cost
@@ -787,13 +797,24 @@
         });
       }
       
-      breakdown.push(...res.lines.map(l=> (idx>0?`Service ${idx+1}: `:'') + l));
+      // Add all lines from this service
+      res.lines.forEach(line => {
+        const prefixedLine = (idx > 0 ? `Service ${idx + 1}: ` : '') + line;
+        breakdown.push(prefixedLine);
+      });
     });
 
-    if (grand===0){ 
+    console.log('Grand total:', grand, 'Breakdown:', breakdown, 'Chart data:', chartData); // Debug
+
+    // Always show something in the breakdown for debugging
+    if (breakdown.length === 0) {
+      breakdown.push('No services configured yet');
+    }
+
+    if (grand === 0){ 
       $('#quoteTotal').textContent = '$0.00'; 
       $('#chartTotal').textContent = '$0';
-      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>'; 
+      $('#quoteBreakdown').innerHTML = breakdown.map(line => `<div class="text-gray-500">• ${esc(line)}</div>`).join('');
       // Clear chart
       const canvas = document.getElementById('donutChart');
       if (canvas) createDonutChart(canvas, [], CHART_COLORS);
@@ -811,21 +832,10 @@
     $('#quoteTotal').textContent = `${money(total)}`;
     $('#chartTotal').textContent = `${money(total)}`;
     
-    // Create breakdown with color indicators
+    // Create breakdown with color indicators - simplified approach
     const coloredBreakdown = breakdown.map((line, idx) => {
-      // Assign colors sequentially, but use green for discount
       const isDiscount = line.includes('Discount');
-      let color;
-      
-      if (isDiscount) {
-        color = '#10b981'; // Green for discount
-      } else {
-        // For service costs, use colors based on chart data index
-        const serviceLines = breakdown.filter(l => !l.includes('Discount'));
-        const serviceIdx = serviceLines.indexOf(line);
-        const chartIdx = Math.floor(serviceIdx / (serviceLines.length / Math.max(1, chartData.length)));
-        color = CHART_COLORS[chartIdx % CHART_COLORS.length];
-      }
+      const color = isDiscount ? '#10b981' : CHART_COLORS[idx % CHART_COLORS.length];
       
       return `<div class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
@@ -835,10 +845,16 @@
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
     
-    // Update donut chart - only show positive values (services, not discount)
+    // Update donut chart
     const canvas = document.getElementById('donutChart');
-    if (canvas && chartData.length > 0) {
-      createDonutChart(canvas, chartData, CHART_COLORS);
+    if (canvas) {
+      if (chartData.length > 0) {
+        createDonutChart(canvas, chartData, CHART_COLORS);
+      } else {
+        // Clear the canvas if no data
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
     
     updateSubmitState(); sendHeight();
