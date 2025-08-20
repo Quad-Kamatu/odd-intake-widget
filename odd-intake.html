@@ -671,26 +671,26 @@
       const offId = subSel.value;
       const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===offId);
       svc.offeringId = offId; svc.serviceKey = meta?.serviceKey||''; svc.subType = meta?.subType||'';
-      toggleForSub(); updateQuote();
+      toggleForSub(); updateQuote(); updateSubmitState();
     });
     refreshSubs();
 
-    // Qty & length
-    wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); });
+    // Qty & length - add validation triggers
+    wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); updateSubmitState(); });
     const filmSlider = wrap.querySelector('.filmSlider');
     const unitsInput = wrap.querySelector('.units');
-    if (filmSlider){ updateSliderFill(filmSlider); filmSlider.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (unitsInput) unitsInput.value = svc.units; updateSliderFill(filmSlider); updateQuote(); }); }
-    if (unitsInput){ unitsInput.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); } updateQuote(); }); }
+    if (filmSlider){ updateSliderFill(filmSlider); filmSlider.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (unitsInput) unitsInput.value = svc.units; updateSliderFill(filmSlider); updateQuote(); updateSubmitState(); }); }
+    if (unitsInput){ unitsInput.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); } updateQuote(); updateSubmitState(); }); }
     const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); }); }
+    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); updateSubmitState(); }); }
 
-    // Date/time/location
-    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); });
-    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); });
-    wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); });
+    // Date/time/location - add validation triggers
+    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); updateSubmitState(); });
+    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); updateSubmitState(); });
+    wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); updateSubmitState(); });
 
-    // Audio choice
-    wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); }));
+    // Audio choice - add validation trigger
+    wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); updateSubmitState(); }));
 
     // Remove card
     const removeBtn = wrap.querySelector('.remove');
@@ -791,7 +791,7 @@
       const prefix = idx > 0 ? `Service ${idx + 1}: ` : '';
       
       res.lines.forEach(line => {
-        const displayText = `${prefix}${line.label}: ${money(line.cost)}${line.cost === 0 ? '' : ''}`;
+        const displayText = `${prefix}${line.label}: $${money(line.cost)}${line.cost === 0 ? '' : ''}`;
         breakdown.push(displayText);
         
         if (line.cost > 0) {
@@ -816,11 +816,11 @@
     let discountAmount = 0;
     if (best > 0) {
       discountAmount = grand * (best / 100);
-      breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
+      breakdown.push(`Discount (${best}%): -$${money(discountAmount)}`);
     }
     
     const total = Math.max(0, grand * (1 - best/100));
-    $('#quoteTotal').textContent = `${money(total)}`;
+    $('#quoteTotal').textContent = `$${money(total)}`;
     
     // Create breakdown with color indicators
     const coloredBreakdown = breakdown.map((line, idx) => {
@@ -858,27 +858,71 @@
   }
 
   function updateSubmitState(){
-    const form = document.getElementById('intakeForm');
     const btn = document.getElementById('submitBtn');
     if (btn && btn.dataset.loading==='1') return;
     
-    // Check if basic fields are filled
+    // Manual validation check - more reliable than checkValidity()
+    const errors = [];
+    
+    // Check basic identity fields
     const firstName = document.getElementById('firstNameInput').value.trim();
     const lastName = document.getElementById('lastNameInput').value.trim();
     const email = document.getElementById('emailInput').value.trim();
     
-    // First check basic required fields
-    if (!firstName || !lastName || !email) {
-      btn.disabled = true;
-      btn.classList.add('btn-disabled');
-      btn.classList.remove('btn-primary');
-      btn.textContent = 'Complete required fields to submit';
-      return;
-    }
+    if (!firstName) errors.push('First name required');
+    if (!lastName) errors.push('Last name required');
+    if (!email) errors.push('Email required');
+    if (email && !email.includes('@')) errors.push('Valid email required');
     
-    // Then check full form validity
-    const valid = form.checkValidity();
-    if (valid) { 
+    // Check required checkboxes
+    const tosCheck = document.getElementById('tosCheck');
+    const understandCheck = document.getElementById('understandCheck');
+    if (!tosCheck.checked) errors.push('Terms of Service agreement required');
+    if (!understandCheck.checked) errors.push('Booking acknowledgment required');
+    
+    // Check each service for completeness
+    state.services.forEach((svc, idx) => {
+      const serviceLabel = idx === 0 ? 'Primary service' : `Service ${idx + 1}`;
+      
+      // Check if service type and subtype are selected
+      if (!svc.serviceKey) errors.push(`${serviceLabel}: Service type required`);
+      if (!svc.offeringId) errors.push(`${serviceLabel}: Service selection required`);
+      
+      if (svc.offeringId) {
+        const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
+        if (meta) {
+          const unit = meta.priceUnit || 'flat';
+          const isEvent = !!meta.isEvent;
+          const showAudio = !!meta.showAudioOption;
+          
+          // Check event-specific requirements
+          if (isEvent) {
+            if (!svc.date) errors.push(`${serviceLabel}: Date required`);
+            if (!svc.time) errors.push(`${serviceLabel}: Time required`);
+            if (!svc.location.trim()) errors.push(`${serviceLabel}: Location required`);
+          }
+          
+          // Check quantity requirements
+          if (unit === 'perHour' && (!svc.hours || svc.hours < 1)) {
+            errors.push(`${serviceLabel}: Hours required`);
+          }
+          if (unit === 'perMinute' && (!svc.units || svc.units < 0.5)) {
+            errors.push(`${serviceLabel}: Film length required`);
+          }
+          if (unit === 'perHeadshot' && (!svc.units || svc.units < 1)) {
+            errors.push(`${serviceLabel}: Number of headshots required`);
+          }
+          
+          // Check audio requirement
+          if (showAudio && !svc.audio) {
+            errors.push(`${serviceLabel}: Audio recording choice required`);
+          }
+        }
+      }
+    });
+    
+    // Update button state
+    if (errors.length === 0) { 
       btn.disabled = false; 
       btn.classList.remove('btn-disabled'); 
       btn.classList.add('btn-primary'); 
@@ -887,7 +931,17 @@
       btn.disabled = true; 
       btn.classList.add('btn-disabled'); 
       btn.classList.remove('btn-primary'); 
-      btn.textContent = 'Complete required fields to submit'; 
+      
+      // Show most relevant error
+      if (errors.some(e => e.includes('First name') || e.includes('Last name') || e.includes('Email'))) {
+        btn.textContent = 'Complete your info to continue';
+      } else if (errors.some(e => e.includes('Terms') || e.includes('acknowledgment'))) {
+        btn.textContent = 'Accept terms to continue';
+      } else if (errors.some(e => e.includes('Service type') || e.includes('Service selection'))) {
+        btn.textContent = 'Select services to continue';
+      } else {
+        btn.textContent = 'Complete service details to continue';
+      }
     }
   }
 
@@ -947,6 +1001,13 @@
 
     // 4) Discount listeners
     document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
+
+    // 4.5) Add validation listeners for identity fields and checkboxes
+    document.getElementById('firstNameInput').addEventListener('input', updateSubmitState);
+    document.getElementById('lastNameInput').addEventListener('input', updateSubmitState);
+    document.getElementById('emailInput').addEventListener('input', updateSubmitState);
+    document.getElementById('tosCheck').addEventListener('change', updateSubmitState);
+    document.getElementById('understandCheck').addEventListener('change', updateSubmitState);
 
     // 5) Add another service
     document.getElementById('addServiceBtn').addEventListener('click', ()=>{ 
@@ -1035,6 +1096,9 @@
     });
 
     updateSubmitState();
+    
+    // Add periodic validation check to catch any edge cases
+    setInterval(updateSubmitState, 1000);
     
     // Final initial height
     sendHeightImmediate();
