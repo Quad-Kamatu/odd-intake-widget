@@ -147,7 +147,7 @@
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="text-center">
                   <div class="text-xs text-gray-500">Total</div>
-                  <div id="chartTotal" class="text-sm font-bold mono">$0</div>
+                  <div id="quoteTotal" class="text-sm font-bold mono">$0</div>
                 </div>
               </div>
             </div>
@@ -330,18 +330,12 @@
     '#B376FF'  // indigo
   ];
 
-  // -------- DONUT CHART --------
-  function createDonutChart(canvas, data, colors) {
-    if (!canvas) {
-      console.warn('Canvas element not found');
-      return;
-    }
+  // -------- SIMPLE DONUT CHART --------
+  function createDonutChart(canvas, data) {
+    if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      console.warn('Could not get 2D context from canvas');
-      return;
-    }
+    if (!ctx) return;
     
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
@@ -356,17 +350,12 @@
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) return;
     
-    console.log('Drawing chart - Total:', total, 'Data:', data); // Debug log
-    
     let currentAngle = -Math.PI / 2; // Start at top
     
     data.forEach((item, index) => {
       const sliceAngle = (item.value / total) * 2 * Math.PI;
-      const color = colors[index % colors.length];
+      const color = CHART_COLORS[index % CHART_COLORS.length];
       
-      console.log(`Slice ${index}: ${item.label} = ${item.value} (${(item.value/total*100).toFixed(1)}%) - angle: ${sliceAngle}`);
-      
-      // Only draw if there's a meaningful slice
       if (sliceAngle > 0.01) {
         // Draw slice
         ctx.beginPath();
@@ -533,21 +522,11 @@
     function refreshSubs(){
       const key = typeSel.value;
       const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
+      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
       subSel.disabled = false; 
       svc.serviceKey = key; 
-      
-      // FIX: Auto-select first service for immediate quote display
-      if (subs.length > 0) {
-        svc.offeringId = subs[0].offeringId;
-        svc.subType = subs[0].subType;
-        subSel.value = subs[0].offeringId;
-        toggleForSub(); // Configure UI for the selected service
-      } else {
-        svc.subType = '';
-        svc.offeringId = '';
-      }
-      
+      svc.subType = ''; 
+      svc.offeringId = '';
       resetServiceUI(); 
       updateQuote(); 
       updateSubmitState(); 
@@ -748,7 +727,7 @@
         const mins = (Number(svc.units)||1);
         cost = (ad.rate||0) * qty * mins; desc += ` ×${qty} @ ${money(ad.rate)}/min for ${mins} min`;
       }
-      if (cost>0) { lines.push(`${desc}: ${money(cost)}`); total += cost; }
+      if (cost>0) { lines.push({label: desc, cost}); total += cost; }
     });
     return { total, lines };
   }
@@ -765,97 +744,71 @@
               : 1;
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
-    lines.push(`Base (${esc(meta.subType)} — ${esc(unit)}): ${money(base)}${meta.startingAt?'+':''}`);
+    lines.push({label: `Base (${esc(meta.subType)} — ${esc(unit)})`, cost: base});
 
     // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
     let setupFee = 0;
     if (isVideography(meta) && unit==='perHour' && Number(meta.setupTime)>0){
       setupFee = (Number(meta.basePrice)||0) * Number(meta.setupTime);
-      if (setupFee>0) lines.push(`Setup & breakdown (${money(meta.setupTime)} hr): ${money(setupFee)}`);
+      if (setupFee>0) lines.push({label: `Setup & breakdown (${money(meta.setupTime)} hr)`, cost: setupFee});
     }
 
-    if (meta.studioRequired) lines.push('Studio rental (billed separately)');
+    if (meta.studioRequired) lines.push({label: 'Studio rental (billed separately)', cost: 0});
 
     return { base, setupFee, lines };
   }
 
   function costForService(svc){
     const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-    if (!meta) return { subtotal:0, lines:[] };
+    if (!meta) return { subtotal:0, lines:[], chartData: [] };
 
     const base = baseCostForService(meta, svc);
     const addons = addonCostForService({ ...meta, offeringId: svc.offeringId }, svc);
 
     const subtotal = base.base + base.setupFee + addons.total;
     const lines = [...base.lines, ...addons.lines];
-    return { subtotal, lines };
+    
+    // Create chart data from cost lines
+    const chartData = lines.filter(line => line.cost > 0).map(line => ({
+      label: line.label,
+      value: line.cost
+    }));
+    
+    return { subtotal, lines, chartData };
   }
 
   function updateQuote(){
-    console.log('updateQuote called, services:', state.services); // Debug
-    
     const breakdown = []; 
-    const chartData = []; // For donut chart - now tracks individual line items
+    const chartData = [];
     let grand = 0;
-    let lineItemIndex = 0; // Track line items for color mapping
     
     state.services.forEach((svc, idx)=>{
-      console.log(`Processing service ${idx}:`, svc); // Debug
-      
-      if (!svc.offeringId) {
-        console.log(`Service ${idx} has no offeringId, skipping`); // Debug
-        return;
-      }
-      
+      if (!svc.offeringId) return;
       const res = costForService(svc);
-      console.log(`Service ${idx} cost result:`, res); // Debug
-      
       grand += res.subtotal; 
       
-      // Add each line item to both breakdown and chart data
+      // Add service prefix for multiple services
+      const prefix = idx > 0 ? `Service ${idx + 1}: ` : '';
+      
       res.lines.forEach(line => {
-        const prefixedLine = (idx > 0 ? `Service ${idx + 1}: ` : '') + line;
-        breakdown.push(prefixedLine);
+        const displayText = `${prefix}${line.label}: ${money(line.cost)}${line.cost === 0 ? '' : ''}`;
+        breakdown.push(displayText);
         
-        // Extract cost from line item for chart - look for dollar amounts
-        const costMatch = line.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-        console.log(`Line: "${line}", Cost match:`, costMatch); // Debug
-        
-        if (costMatch) {
-          const cost = parseFloat(costMatch[1].replace(/,/g, ''));
-          console.log(`Extracted cost: ${cost}`); // Debug
-          
-          if (cost > 0) {
-            // Clean up label for chart (remove the cost portion)
-            let cleanLabel = line.replace(/:\s*\$\d+(?:,\d{3})*(?:\.\d{2})?\+?$/, '').trim();
-            if (idx > 0) cleanLabel = `Service ${idx + 1}: ${cleanLabel}`;
-            
-            chartData.push({
-              label: cleanLabel,
-              value: cost,
-              colorIndex: lineItemIndex // Track color index
-            });
-            console.log(`Added chart item: "${cleanLabel}" = $${cost} (color index: ${lineItemIndex})`); // Debug
-            lineItemIndex++;
-          }
+        if (line.cost > 0) {
+          chartData.push({
+            label: `${prefix}${line.label}`,
+            value: line.cost
+          });
         }
       });
     });
 
-    console.log('Grand total:', grand, 'Breakdown:', breakdown, 'Chart data:', chartData); // Debug
-
-    // Always show something in the breakdown for debugging
-    if (breakdown.length === 0) {
-      breakdown.push('No services configured yet');
-    }
-
     if (grand === 0){ 
       $('#quoteTotal').textContent = '$0.00'; 
-      $('#chartTotal').textContent = '$0';
-      $('#quoteBreakdown').innerHTML = breakdown.map(line => `<div class="text-gray-500">• ${esc(line)}</div>`).join('');
+      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
       // Clear chart
       const canvas = document.getElementById('donutChart');
-      if (canvas) createDonutChart(canvas, [], CHART_COLORS);
+      if (canvas) createDonutChart(canvas, []);
       updateSubmitState(); sendHeight(); return; 
     }
     
@@ -864,54 +817,41 @@
     if (best > 0) {
       discountAmount = grand * (best / 100);
       breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
-      // Add discount as negative value to chart (but don't show it)
-      // We'll handle discount display separately
     }
     
     const total = Math.max(0, grand * (1 - best/100));
     $('#quoteTotal').textContent = `${money(total)}`;
-    $('#chartTotal').textContent = `${money(total)}`;
     
-    // Create breakdown with color indicators matching chart slices
-    let chartItemIndex = 0;
+    // Create breakdown with color indicators
     const coloredBreakdown = breakdown.map((line, idx) => {
       const isDiscount = line.includes('Discount');
+      const hasChartData = chartData[idx] && !isDiscount;
       
+      let color = '#6b7280'; // Default grey
       if (isDiscount) {
-        // Discounts don't appear in chart, use green
-        return `<div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: #10b981"></div>
-          <span class="text-green-600">• ${esc(line)}</span>
-        </div>`;
-      } else {
-        // Check if this line item has a cost (should be in chart)
-        const hasCost = line.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-        let color = '#6b7280'; // Default grey
-        
-        if (hasCost && chartItemIndex < CHART_COLORS.length) {
-          color = CHART_COLORS[chartItemIndex % CHART_COLORS.length];
-          chartItemIndex++;
-        }
-        
-        return `<div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-          <span>• ${esc(line)}</span>
-        </div>`;
+        color = '#10b981'; // Green for discount
+      } else if (hasChartData) {
+        color = CHART_COLORS[idx % CHART_COLORS.length];
       }
+      
+      const textColor = isDiscount ? 'text-green-600' : '';
+      
+      return `<div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
+        <span class="${textColor}">• ${esc(line)}</span>
+      </div>`;
     }).join('');
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
     
-    // Update donut chart with line items
+    // Update donut chart
     const canvas = document.getElementById('donutChart');
-    if (canvas) {
-      if (chartData.length > 0) {
-        createDonutChart(canvas, chartData, CHART_COLORS);
-      } else {
-        // Clear the canvas if no data
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+    if (canvas && chartData.length > 0) {
+      createDonutChart(canvas, chartData);
+    } else if (canvas) {
+      // Clear the canvas if no data
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     
     updateSubmitState(); sendHeight();
