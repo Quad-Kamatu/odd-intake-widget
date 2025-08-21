@@ -135,12 +135,12 @@
 
       <div class="card">
         <h3 class="font-semibold mb-2">Estimate</h3>
-        <div class="grid lg:grid-cols-3 gap-4 items-start">
+        <div class="grid lg:grid-cols-3 gap-4">
           <div class="lg:col-span-2 card bg-gray-50 border border-gray-200">
             <h4 class="font-semibold mb-2">Quote Breakdown</h4>
             <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">-</div></div>
           </div>
-          <div class="flex items-center justify-center min-h-full py-2">
+          <div class="flex items-start justify-center pt-2">
             <div class="relative w-56 h-56">
               <canvas id="donutChart" width="224" height="224" class="w-56 h-56"></canvas>
               <div class="absolute inset-0 flex items-center justify-center">
@@ -329,7 +329,7 @@
     '#B376FF'  // indigo
   ];
 
-  // -------- SIMPLE DONUT CHART --------
+  // -------- IMPROVED DONUT CHART --------
   function createDonutChart(canvas, data) {
     if (!canvas) return;
     
@@ -343,6 +343,18 @@
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Always draw background ring
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI, true);
+    ctx.fillStyle = '#f3f4f6'; // Light grey background
+    ctx.fill();
+    
+    // Add subtle border to background ring
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     
     if (!data.length) return;
     
@@ -805,7 +817,7 @@
     if (grand === 0){ 
       $('#quoteTotal').textContent = '$0.00'; 
       $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
-      // Clear chart
+      // Clear chart but show background ring
       const canvas = document.getElementById('donutChart');
       if (canvas) createDonutChart(canvas, []);
       updateSubmitState(); sendHeight(); return; 
@@ -843,14 +855,10 @@
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
     
-    // Update donut chart
+    // Update donut chart (always call to ensure background ring is drawn)
     const canvas = document.getElementById('donutChart');
-    if (canvas && chartData.length > 0) {
+    if (canvas) {
       createDonutChart(canvas, chartData);
-    } else if (canvas) {
-      // Clear the canvas if no data
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     
     updateSubmitState(); sendHeight();
@@ -1098,6 +1106,10 @@
     
     // Add periodic validation check to catch any edge cases
     setInterval(updateSubmitState, 1000);
+    
+    // Initialize chart with background ring
+    const canvas = document.getElementById('donutChart');
+    if (canvas) createDonutChart(canvas, []);
     
     // Final initial height
     sendHeightImmediate();
