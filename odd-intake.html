@@ -134,10 +134,7 @@
       </div>
 
       <div class="card">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold">Estimate</h3>
-          <h4 class="font-bold">Cost Breakdown</h4>
-        </div>
+        <h3 class="font-semibold mb-2">Estimate</h3>
         <div class="grid lg:grid-cols-3 gap-4 items-start">
           <div class="lg:col-span-2 card bg-gray-50 border border-gray-200">
             <h4 class="font-semibold mb-2">Quote Breakdown</h4>
@@ -149,7 +146,7 @@
               <div class="absolute inset-0 flex items-center justify-center">
                 <div class="text-center">
                   <div class="text-xs text-gray-500">Total</div>
-                  <div id="quoteTotal" class="text-lg font-bold mono">$0</div>
+                  <div id="quoteTotal" class="text-sm font-bold mono">$0</div>
                 </div>
               </div>
             </div>
@@ -341,8 +338,8 @@
     
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const outerRadius = 50;
-    const innerRadius = 30;
+    const outerRadius = 75;
+    const innerRadius = 45;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -793,7 +790,7 @@
       const prefix = idx > 0 ? `Service ${idx + 1}: ` : '';
       
       res.lines.forEach(line => {
-        const displayText = `${prefix}${line.label}: $${money(line.cost)}${line.cost === 0 ? '' : ''}`;
+        const displayText = `${prefix}${line.label}: ${money(line.cost)}${line.cost === 0 ? '' : ''}`;
         breakdown.push(displayText);
         
         if (line.cost > 0) {
@@ -818,11 +815,11 @@
     let discountAmount = 0;
     if (best > 0) {
       discountAmount = grand * (best / 100);
-      breakdown.push(`Discount (${best}%): -$${money(discountAmount)}`);
+      breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
     }
     
     const total = Math.max(0, grand * (1 - best/100));
-    $('#quoteTotal').textContent = `$${money(total)}`;
+    $('#quoteTotal').textContent = `${money(total)}`;
     
     // Create breakdown with color indicators
     const coloredBreakdown = breakdown.map((line, idx) => {
