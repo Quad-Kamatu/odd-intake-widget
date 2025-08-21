@@ -187,7 +187,7 @@
     </form>
 
     <div id="successScreen" class="card" style="display:none;">
-      <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
+      <h2 class="text-xl font-semibold mb-2">Thanks â€" your request was sent!</h2>
       <p class="text-sm text-gray-700 mb-4">We'll follow up by email shortly.</p>
       <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
       <div class="mt-4">
@@ -610,7 +610,7 @@
         }
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
+        // For per-minute services that need hours estimate â€" except Additional Camera which inherits service hours
         if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
           const hoursWrap = document.createElement('label'); hoursWrap.className='block';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
@@ -728,15 +728,32 @@
 
       let cost = 0; let desc = ad.label;
       const mode = (ad.pricingMode||'flat');
-      if (mode==='flat'){ cost = (ad.rate||0) * qty; if(qty>1) desc += ` ×${qty}`; }
+      if (mode==='flat'){ 
+        cost = (ad.rate||0) * qty; 
+        if (qty > 1) {
+          desc += ` ${money(ad.rate)} each × ${qty}`;
+        } else {
+          desc += ` (flat rate)`;
+        }
+      }
       else if (mode==='perHour'){
         const inherit = String(ad.label||'').toLowerCase()==='additional camera';
         const hrs = inherit ? (Number(svc.hours)||1) : (meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1));
-        cost = (ad.rate||0) * qty * hrs; desc += ` ×${qty} @ ${money(ad.rate)}/hr for ${hrs} hr`;
+        cost = (ad.rate||0) * qty * hrs; 
+        if (qty > 1) {
+          desc += ` ${money(ad.rate)}/hour × ${qty} × ${hrs} hour${hrs !== 1 ? 's' : ''}`;
+        } else {
+          desc += ` ${money(ad.rate)}/hour for ${hrs} hour${hrs !== 1 ? 's' : ''}`;
+        }
       }
       else if (mode==='perMinute'){
         const mins = (Number(svc.units)||1);
-        cost = (ad.rate||0) * qty * mins; desc += ` ×${qty} @ ${money(ad.rate)}/min for ${mins} min`;
+        cost = (ad.rate||0) * qty * mins; 
+        if (qty > 1) {
+          desc += ` ${money(ad.rate)}/minute × ${qty} × ${mins} minute${mins !== 1 ? 's' : ''}`;
+        } else {
+          desc += ` ${money(ad.rate)}/minute for ${mins} minute${mins !== 1 ? 's' : ''}`;
+        }
       }
       if (cost>0) { lines.push({label: desc, cost}); total += cost; }
     });
@@ -755,13 +772,29 @@
               : 1;
     let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
     const lines = [];
-    lines.push({label: `Base (${esc(meta.subType)} — ${esc(unit)})`, cost: base});
+
+    // Create natural language descriptions
+    let baseLabel = esc(meta.subType || 'Service');
+    if (unit === 'perHour') {
+      baseLabel += ` ${money(baseRate)}/hour for ${qty} hour${qty !== 1 ? 's' : ''}`;
+    } else if (unit === 'perMinute') {
+      baseLabel += ` ${money(baseRate)}/minute for ${qty} minute${qty !== 1 ? 's' : ''}`;
+    } else if (unit === 'perHeadshot') {
+      baseLabel += ` ${money(baseRate)} per headshot × ${qty} headshot${qty !== 1 ? 's' : ''}`;
+    } else {
+      baseLabel += ' (flat rate)';
+    }
+    
+    lines.push({label: baseLabel, cost: base});
 
     // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
     let setupFee = 0;
     if (isVideography(meta) && unit==='perHour' && Number(meta.setupTime)>0){
       setupFee = (Number(meta.basePrice)||0) * Number(meta.setupTime);
-      if (setupFee>0) lines.push({label: `Setup & breakdown (${money(meta.setupTime)} hr)`, cost: setupFee});
+      if (setupFee>0) {
+        const setupLabel = `Setup & breakdown ${money(meta.basePrice)}/hour for ${money(meta.setupTime)} hour${Number(meta.setupTime) !== 1 ? 's' : ''}`;
+        lines.push({label: setupLabel, cost: setupFee});
+      }
     }
 
     if (meta.studioRequired) lines.push({label: 'Studio rental (billed separately)', cost: 0});
@@ -816,7 +849,7 @@
 
     if (grand === 0){ 
       $('#quoteTotal').textContent = '$0.00'; 
-      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
+      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">â€"</div>';
       // Clear chart but show background ring
       const canvas = document.getElementById('donutChart');
       if (canvas) createDonutChart(canvas, []);
@@ -847,10 +880,25 @@
       
       const textColor = isDiscount ? 'text-green-600' : '';
       
-      return `<div class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-        <span class="${textColor}">• ${esc(line)}</span>
-      </div>`;
+      // Parse the line to separate description and cost
+      const parts = line.split(': ');
+      if (parts.length === 2 && !isDiscount) {
+        const description = parts[0];
+        const cost = parts[1];
+        return `<div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 flex-1">
+            <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
+            <span class="text-sm">${esc(description)}</span>
+          </div>
+          <span class="text-sm font-medium text-right">${cost}</span>
+        </div>`;
+      } else {
+        // Handle discount lines and other special cases
+        return `<div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
+          <span class="text-sm ${textColor}">${esc(line)}</span>
+        </div>`;
+      }
     }).join('');
     
     $('#quoteBreakdown').innerHTML = coloredBreakdown;
@@ -1037,7 +1085,7 @@
       if (btn && btn.dataset.loading === '1') return;
       if (!e.target.checkValidity()){ updateSubmitState(); return; }
 
-      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
+      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submittingâ€¦</span>'; }
 
       const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
       const payload = {
@@ -1075,7 +1123,7 @@
         if (success){
           const who = document.getElementById('firstNameInput')?.value || 'Thank you';
           document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
+          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} â€" your request was sent!`;
           success.style.display = 'block';
         }
         
