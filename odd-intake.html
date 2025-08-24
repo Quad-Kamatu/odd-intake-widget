@@ -75,128 +75,161 @@
     @keyframes spin{ to{ transform: rotate(360deg); } }
     .spinner{ width:1rem; height:1rem; display:inline-block; animation: spin 1s linear infinite; margin-right:.5rem; vertical-align:middle; }
     .btn.btn-loading{ cursor:progress; }
+
+    /* Enhanced addon styling */
+    .addon-selected { 
+      background: #f0f9ff; 
+      border-color: #76F1FF !important; 
+    }
+    .addon-row {
+      padding: 12px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .addon-row:hover {
+      background: #f8f9fa;
+    }
   </style>
 </head>
-<body class="text-gray-900">
-  <div class="max-w-4xl mx-auto p-6 space-y-6">
-    <div id="pageHeader" class="mb-2">
-      <h1 class="text-2xl font-semibold page-title">Service Request</h1>
-    </div>
+<body>
 
-    <!-- Identity & Discounts -->
-    <div id="identityCard" class="card">
-      <div class="grid md:grid-cols-2 gap-4">
-        <div class="space-y-4">
-          <div class="lbl">Your Info</div>
-          <div class="row">
-            <label class="block">
-              <span class="lbl">First Name *</span>
-              <input id="firstNameInput" required type="text" class="inp" placeholder="Jane" />
-            </label>
-            <label class="block">
-              <span class="lbl">Last Name *</span>
-              <input id="lastNameInput" required type="text" class="inp" placeholder="Doe" />
-            </label>
-          </div>
-          <label class="block">
-            <span class="lbl">Email *</span>
-            <input id="emailInput" required type="email" class="inp" placeholder="you@example.com" />
-          </label>
-          <label class="block">
-            <span class="lbl">Organization Name (optional)</span>
-            <input id="orgInput" type="text" class="inp" placeholder="Organization (if applicable)" />
-          </label>
-        </div>
-        <div class="space-y-4">
-          <div class="lbl">Discount Qualification</div>
-          <div>
-            <div class="text-sm text-gray-700 mb-2">Do you qualify for one of these discounts? (select one)</div>
-            <div class="flex flex-col gap-2 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="none" checked /> None</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="student" /> Student - 10% (show student ID)</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="nonprofit" /> 501(c)(3) or fiscally sponsored - 10%</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="selfDiscount" value="odd_artist" /> ODD Artist - 20%</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Services Form -->
-    <form id="intakeForm" class="space-y-6" novalidate>
-      <div id="servicesContainer" class="space-y-6"></div>
-
-      <div class="card bg-white border border-gray-200">
-        <div class="flex items-center justify-between">
-          <div class="lbl">Additional Services</div>
-          <button id="addServiceBtn" type="button" class="btn">+ Add another service</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3 class="font-semibold mb-2">Estimate</h3>
-        <div class="grid lg:grid-cols-3 gap-4">
-          <div class="lg:col-span-2 card bg-gray-50 border border-gray-200">
-            <h4 class="font-semibold mb-2">Quote Breakdown</h4>
-            <div id="quoteBreakdown" class="text-sm space-y-1"><div class="text-gray-500">—</div></div>
-          </div>
-          <div class="flex items-start justify-center pt-2">
-            <div class="relative w-56 h-56">
-              <canvas id="donutChart" width="224" height="224" class="w-56 h-56"></canvas>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <div class="text-center">
-                  <div class="text-xs text-gray-500">Total</div>
-                  <div id="quoteTotal" class="text-sm font-bold mono">$0</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card bg-gray-50 border border-gray-200">
-        <div class="space-y-4">
-          <label class="block">
-            <span class="lbl">Additional relevant information</span>
-            <textarea id="additionalInfo" rows="3" class="inp" placeholder="Anything else we should know?"></textarea>
-          </label>
-
-          <label class="block">
-            <span class="lbl">Requested providers (optional)</span>
-            <input id="requestedProviders" type="text" class="inp" placeholder="e.g., preferred videographer/photographer names" />
-          </label>
-
-          <label class="flex items-start gap-3">
-            <input id="tosCheck" type="checkbox" required class="mt-1" />
-            <span class="text-sm">I have read and agree to the <a class="link" href="https://www.onedaydance.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> *</span>
-          </label>
-          <label class="flex items-start gap-3">
-            <input id="understandCheck" type="checkbox" required class="mt-1" />
-            <span class="text-sm">I understand that submitting this form does not constitute confirmation of booking *</span>
-          </label>
-          <div>
-            <div class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</div>
-            <div class="flex items-center gap-6 text-sm">
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="yes" checked /> Yes</label>
-              <label class="inline-flex items-center gap-2"><input type="radio" name="mailing" value="no" /> No</label>
-            </div>
-          </div>
-          <button id="submitBtn" type="submit" class="btn btn-disabled w-full" disabled>Submit Request</button>
-        </div>
-      </div>
-    </form>
-
-    <div id="successScreen" class="card" style="display:none;">
-      <h2 class="text-xl font-semibold mb-2">Thanks — your request was sent!</h2>
-      <p class="text-sm text-gray-700 mb-4">We'll follow up by email shortly.</p>
-      <div class="text-sm text-gray-600">Submitted: <span id="successRef" class="mono"></span></div>
-      <div class="mt-4">
-        <a href="https://www.onedaydance.com/services" target="_top" rel="noopener" class="btn btn-primary">Return to Services</a>
-      </div>
-    </div>
+<div class="mx-auto max-w-4xl p-6">
+  <div class="mb-6">
+    <h1 class="page-title text-3xl font-bold mb-2">Service Request</h1>
   </div>
 
-  <script>
+  <form id="intakeForm">
+    <!-- Basic Info Card -->
+    <div class="card mb-6">
+      <h2 class="text-xl font-bold mb-4">Your Info</h2>
+      <div class="row">
+        <label class="block">
+          <span class="lbl">First Name *</span>
+          <input type="text" id="firstNameInput" class="inp" required />
+        </label>
+        <label class="block">
+          <span class="lbl">Last Name *</span>
+          <input type="text" id="lastNameInput" class="inp" required />
+        </label>
+      </div>
+      <div class="row">
+        <label class="block">
+          <span class="lbl">Email *</span>
+          <input type="email" id="emailInput" class="inp" required />
+        </label>
+        <label class="block">
+          <span class="lbl">Organization Name (optional)</span>
+          <input type="text" id="orgInput" class="inp" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Discount Card -->
+    <div class="card mb-6">
+      <h2 class="text-lg font-bold mb-3">Discount Qualification</h2>
+      <p class="text-sm text-gray-600 mb-3">Do you qualify for one of these discounts? (select one)</p>
+      <div class="space-y-2">
+        <label class="inline-flex items-center gap-2">
+          <input type="radio" name="selfDiscount" value="none" checked />
+          <span>None</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input type="radio" name="selfDiscount" value="student" />
+          <span>Student - 10% (show student ID)</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input type="radio" name="selfDiscount" value="nonprofit" />
+          <span>501(c)(3) or fiscally sponsored - 10%</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input type="radio" name="selfDiscount" value="artist" />
+          <span>ODD Artist - 20%</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Services Section -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold">Services</h2>
+        <button type="button" id="addServiceBtn" class="btn btn-primary text-sm">+ Add another service</button>
+      </div>
+      <div id="servicesContainer">
+        <!-- Services will be dynamically added here -->
+      </div>
+    </div>
+
+    <!-- Quote Section -->
+    <div class="card mb-6">
+      <h2 class="text-lg font-bold mb-3">Estimate</h2>
+      <div class="mb-3">
+        <h3 class="font-semibold">Quote Breakdown</h3>
+        <div id="quoteBreakdown" class="text-sm text-gray-600 mono whitespace-pre-wrap"></div>
+      </div>
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+        <span class="font-bold">Total</span>
+        <span id="quoteTotal" class="font-bold text-lg mono">$0</span>
+      </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="card mb-6">
+      <div class="row">
+        <label class="block">
+          <span class="lbl">Additional relevant information</span>
+          <textarea id="additionalInfo" class="inp" rows="3" placeholder="Any special requirements, preferences, or details we should know about..."></textarea>
+        </label>
+        <label class="block">
+          <span class="lbl">Requested providers (optional)</span>
+          <input type="text" id="requestedProviders" class="inp" placeholder="Any specific team members you'd like to work with" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Terms and Mailing -->
+    <div class="card mb-6">
+      <div class="space-y-4">
+        <label class="inline-flex items-start gap-3">
+          <input type="checkbox" id="tosCheck" class="mt-1" required />
+          <span class="text-sm">I have read and agree to the <a href="#" class="link">Terms of Service</a> *</span>
+        </label>
+        <label class="inline-flex items-start gap-3">
+          <input type="checkbox" id="understandCheck" class="mt-1" required />
+          <span class="text-sm">I understand that submitting this form does not constitute confirmation of booking *</span>
+        </label>
+        <div>
+          <p class="lbl mb-2">Would you like to join our mailing list to receive offers and promotions?</p>
+          <label class="inline-flex items-center gap-2 mr-4">
+            <input type="radio" name="mailing" value="yes" />
+            <span>Yes</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="mailing" value="no" checked />
+            <span>No</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="text-center">
+      <button type="submit" id="submitBtn" class="btn btn-primary text-lg px-8">
+        Submit Request
+      </button>
+    </div>
+  </form>
+
+  <!-- Success Message -->
+  <div id="successMessage" class="card text-center" style="display:none;">
+    <h2 class="text-xl font-bold text-green-600 mb-2">Thanks — your request was sent!</h2>
+    <p class="text-gray-600 mb-4">We'll follow up by email shortly.</p>
+    <p class="text-sm text-gray-500 mb-4">Submitted: <span id="submissionTime"></span></p>
+    <button type="button" onclick="window.location.reload()" class="btn btn-primary">Return to Services</button>
+  </div>
+
+</div>
+
+<script>
   // -------- CONFIG / CATALOG --------
   const CONFIG = {
     mode: 'api',
@@ -205,721 +238,686 @@
   };
   const ALLOWED_PARENTS = ['https://www.onedaydance.com', 'https://onedaydance.com'];
 
-  // -------- HEIGHT MESSAGING (COMPLETELY FIXED) --------
+  // -------- HEIGHT MESSAGING --------
   let currentHeight = 0;
   let heightRequestId = null;
 
   function postHeights(px) {
     try {
       const ts = Date.now();
-      const msgStd = { type:'ODD_FORM_HEIGHT', height:px, ts };
-      const msgLegacy = { oddIntakeHeight: px, ts };
+      const msgString = JSON.stringify({ height: px, timestamp: ts, requestId: heightRequestId });
+      
       if (window.parent && window.parent !== window) {
-        (ALLOWED_PARENTS||[]).forEach(origin=>{
-          try { window.parent.postMessage(msgStd, origin); } catch(_) {/*noop*/}
-          try { window.parent.postMessage(msgLegacy, origin); } catch(_) {/*noop*/}
+        ALLOWED_PARENTS.forEach(origin => {
+          try {
+            window.parent.postMessage(msgString, origin);
+          } catch (e) { /* ignore cross-origin errors */ }
         });
       }
-    } catch(_) {/*noop*/}
+    } catch (e) { /* ignore errors */ }
   }
 
   function measureHeight() {
-    // Force layout recalculation
-    document.body.offsetHeight;
-    
-    // Special handling for success screen
-    const successScreen = document.getElementById('successScreen');
-    if (successScreen && successScreen.style.display !== 'none') {
-      // Measure success screen plus padding
-      const containerPadding = 48; // Account for body padding
-      const successHeight = successScreen.getBoundingClientRect().height;
-      const headerHeight = document.getElementById('pageHeader')?.getBoundingClientRect().height || 0;
-      return Math.ceil(successHeight + headerHeight + containerPadding);
-    }
-    
-    // Measure the actual content height using multiple methods for accuracy
-    const container = document.querySelector('.max-w-4xl');
-    if (container) {
-      // Get the actual content bounds
-      const containerRect = container.getBoundingClientRect();
-      const containerScrollHeight = container.scrollHeight;
-      
-      // Use the larger of the two measurements
-      let contentHeight = Math.max(containerRect.height, containerScrollHeight);
-      
-      // Add body padding
-      const bodyPadding = 24; // Based on p-6 class (1.5rem = 24px)
-      contentHeight += bodyPadding;
-      
-      return Math.ceil(contentHeight);
-    }
-    
-    // Fallback measurements
-    const docHeight = document.documentElement.scrollHeight;
-    const bodyHeight = document.body.scrollHeight;
-    return Math.ceil(Math.max(docHeight, bodyHeight, 200));
+    const body = document.body;
+    const html = document.documentElement;
+    return Math.max(
+      body.scrollHeight, body.offsetHeight,
+      html.clientHeight, html.scrollHeight, html.offsetHeight
+    );
   }
 
   function sendHeight() {
-    // Cancel any pending updates
-    if (heightRequestId) {
-      cancelAnimationFrame(heightRequestId);
-      heightRequestId = null;
+    const height = measureHeight();
+    if (height !== currentHeight) {
+      currentHeight = height;
+      postHeights(height);
     }
-    
-    heightRequestId = requestAnimationFrame(() => {
-      try {
-        const newHeight = measureHeight();
-        
-        // FIXED: Always send height updates, even when shrinking
-        // The old code had logic that prevented shrinking - removed that
-        if (Math.abs(newHeight - currentHeight) > 1) { // Only skip tiny changes
-          currentHeight = newHeight;
-          postHeights(newHeight);
-        }
-      } catch(e) {
-        console.warn('Height measurement error:', e);
-      }
-      heightRequestId = null;
-    });
   }
 
-  // Immediate height sending for critical updates
   function sendHeightImmediate() {
-    try {
-      const newHeight = measureHeight();
-      currentHeight = newHeight;
-      postHeights(newHeight);
-    } catch(e) {
-      console.warn('Immediate height measurement error:', e);
-    }
+    currentHeight = measureHeight();
+    postHeights(currentHeight);
   }
 
-  // Debounced version for frequent events
-  let debounceTimer = null;
-  function sendHeightDebounced() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(sendHeight, 16); // ~60fps
+  const sendHeightDebounced = (() => {
+    let timeout;
+    return () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(sendHeight, 100);
+    };
+  })();
+
+  // -------- UTILITIES --------
+  const esc = str => (str || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c]);
+  const money = (amt, showCents = true) => {
+    const n = Number(amt) || 0;
+    return showCents ? `$${n.toFixed(2)}` : `$${Math.round(n)}`;
+  };
+
+  function updateSliderFill(slider) {
+    const val = Number(slider.value) || 0;
+    const max = Number(slider.max) || 100;
+    const percent = (val / max) * 100;
+    slider.style.setProperty('--val', `${percent}%`);
   }
 
-  // -------- UTILS --------
-  const $ = (sel) => document.querySelector(sel);
-  const money = (n) => (Number(n)||0).toFixed(2);
-  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const uid = () => Math.random().toString(36).slice(2,9);
-  function updateSliderFill(el){ if(!el) return; const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value)||0; const pct=(max>min)?((val-min)/(max-min))*100:0; el.style.setProperty('--val', pct+'%'); }
-  function to12h(h,m){ const ampm=h>=12?'PM':'AM'; let hh=h%12; if(hh===0) hh=12; return `${hh}:${String(m).padStart(2,'0')} ${ampm}`; }
-  function addHoursToTime(timeStr, hours){ if(!timeStr) return ''; const [hStr,mStr='0']=String(timeStr).split(':'); const h=parseInt(hStr,10), m=parseInt(mStr,10); const total=h*60+m+Math.round((Number(hours)||0)*60); const nh=((Math.floor(total/60))%24+24)%24, nm=((total%60)+60)%60; return to12h(nh,nm); }
-  function combineDateTime(dateStr, timeStr){ if(!dateStr||!timeStr) return ''; return `${dateStr} ${timeStr}:00`; }
+  function to12h(time24) {
+    if (!time24) return '';
+    const [h, m] = time24.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = (h % 12) || 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+
+  function addHoursToTime(timeStr, hours) {
+    if (!timeStr || !hours) return '';
+    const parts = timeStr.split(':');
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1] || '0', 10) || 0;
+    let totalMins = h * 60 + m + Math.round(Number(hours) * 60);
+    totalMins = (totalMins % (24 * 60) + (24 * 60)) % (24 * 60);
+    const newH = Math.floor(totalMins / 60);
+    const newM = totalMins % 60;
+    const ampm = newH >= 12 ? 'PM' : 'AM';
+    const h12 = (newH % 12) || 12;
+    return `${h12}:${String(newM).padStart(2, '0')} ${ampm}`;
+  }
+
+  function combineDateTime(date, time) {
+    if (!date) return '';
+    return time ? `${date} ${time}` : date;
+  }
 
   // -------- STATE --------
   const state = { services: [] };
 
-  // -------- CHART COLORS --------
-  const CHART_COLORS = [
-    '#FF9D76', // coral
-    '#76F1FF', // cyan  
-    '#C176FF', // violet
-    '#FFE176', // saffron
-    '#FF7676', // red
-    '#76FF9D', // green
-    '#9D76FF', // purple
-    '#76FFE1', // teal
-    '#FFB376', // orange
-    '#B376FF'  // indigo
-  ];
-
-  // -------- IMPROVED DONUT CHART --------
-  function createDonutChart(canvas, data) {
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const outerRadius = 87;
-    const innerRadius = 52;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Always draw background ring
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
-    ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI, true);
-    ctx.fillStyle = '#f3f4f6'; // Light grey background
-    ctx.fill();
-    
-    // Add subtle border to background ring
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    if (!data.length) return;
-    
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    if (total === 0) return;
-    
-    let currentAngle = -Math.PI / 2; // Start at top
-    
-    data.forEach((item, index) => {
-      const sliceAngle = (item.value / total) * 2 * Math.PI;
-      const color = CHART_COLORS[index % CHART_COLORS.length];
-      
-      if (sliceAngle > 0.01) {
-        // Draw slice
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, outerRadius, currentAngle, currentAngle + sliceAngle);
-        ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-        
-        // Add subtle border
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-      
-      currentAngle += sliceAngle;
-    });
-  }
-
-  function bestDiscountPercent(){ const selfVal = document.querySelector('input[name="selfDiscount"]:checked')?.value || 'none'; return selfVal==='odd_artist'?20:((selfVal==='student'||selfVal==='nonprofit')?10:0); }
-
-  function serviceEligibleForComplexity(meta){ return !!meta?.hasComplexity; }
-  function isVideography(meta){ return (meta?.serviceKey||'').toLowerCase()==='videography'; }
-  function isVideoEditing(meta){ return (meta?.subType||'')==='Video Editing'; }
-
-  // -------- CATALOG LOADER --------
-  async function loadCatalog(){
-    const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
+  // -------- CATALOG LOADING --------
+  async function loadCatalog() {
     const controller = new AbortController();
-    const to = setTimeout(()=>controller.abort(), 8000);
-    try{
-      const res = await fetch(url, { headers:{ 'Content-Type':'application/json' }, signal: controller.signal });
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    
+    try {
+      const url = `${CONFIG.api.baseUrl}${CONFIG.api.catalogPath}`;
+      const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal
+      });
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
       const data = await res.json();
-      const normalizeKey = (s) => String(s||'').trim();
-      const services = (data.services||[]).map(s=>({ serviceKey: normalizeKey(s.serviceKey), serviceName: s.name || s.serviceName || normalizeKey(s.serviceKey) }));
-      const pricing  = (data.pricing || []).map(p=>({ ...p, serviceKey: normalizeKey(p.serviceKey) }));
-      const addons   = (data.addons  || []).map(a=>({ ...a, appliesToCategories: (a.appliesToCategories||[]).map(normalizeKey) }));
+      const normalizeKey = k => String(k || '').toLowerCase().replace(/\s+/g, '');
+      
+      const services = (data.services || []).map(s => ({ ...s, serviceKey: normalizeKey(s.serviceKey) }));
+      const pricing = (data.pricing || []).map(p => ({ ...p, serviceKey: normalizeKey(p.serviceKey) }));
+      const addons = (data.addons || []).map(a => ({
+        ...a,
+        appliesToCategories: (a.appliesToCategories || []).map(normalizeKey)
+      }));
+      
       if (!services.length || !pricing.length) throw new Error('Empty catalog');
+      
       CONFIG.catalog = { services, pricing, addons };
       return true;
-    } finally { clearTimeout(to); }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
-  function renderFatal(message){
+  function renderFatal(message) {
     const root = document.querySelector('.max-w-4xl');
     if (!root) return;
     root.innerHTML = `
-      <div class="card bg-white border border-red-200">
-        <h2 class="text-xl font-semibold text-red-700 mb-2">Service Request temporarily unavailable</h2>
-        <p class="text-sm text-gray-700 mb-3">${esc(message || 'Our services catalog is currently unavailable.')}</p>
-        <p class="text-sm text-gray-700">Please email
-          <a class="link" href="mailto:info@onedaydance.com">info@onedaydance.com</a>
-          with your request while we resolve this.
-        </p>
-      </div>`;
+      <div class="card text-center">
+        <h2 class="text-xl font-bold text-red-600 mb-2">Unable to Load Form</h2>
+        <p class="text-gray-600">${esc(message)}</p>
+      </div>
+    `;
     sendHeightImmediate();
   }
 
-  // -------- SERVICE CARD --------
-  function createServiceState(id){ return { id, offeringId:'', serviceKey:'', subType:'', date:'', time:'', location:'', hours:1, units:1, complexity:'simple', audio:null, addons: {}, addonHours: {} }; }
+  // -------- SERVICE MANAGEMENT --------
+  function createServiceState(id) {
+    return {
+      id,
+      offeringId: '',
+      serviceKey: '',
+      subType: '',
+      date: '',
+      time: '',
+      location: '',
+      hours: 1,
+      units: 1,
+      complexity: 'simple',
+      audio: null,
+      addons: {}, // Enhanced: Ensure addons object is always initialized
+      addonHours: {},
+      addonLabels: {} // Enhanced: Store addon labels for better webhook data
+    };
+  }
 
-  function buildServiceCard(svc){
+  function buildServiceCard(svc) {
     const wrap = document.createElement('div');
     wrap.className = 'card service-card';
     wrap.dataset.id = svc.id;
     wrap.innerHTML = `
-      <div class="flex items-center justify-between mb-3">
-        <div class="font-semibold">Service ${svc.id==='primary'?'(Primary)':''}</div>
-        ${svc.id!=='primary'?'<button type="button" class="btn remove">Remove</button>':''}
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold">Service ${state.services.indexOf(svc) + 1}</h3>
+        ${state.services.length > 1 ? `<button type="button" class="removeService text-red-600 hover:text-red-800">Remove</button>` : ''}
       </div>
+      
       <div class="row">
         <label class="block">
-          <span class="lbl">Service Type *</span>
-          <select class="inp serviceType" required></select>
+          <span class="lbl">Service Category *</span>
+          <select class="inp serviceType" required>
+            <option value="">Choose category...</option>
+            ${(CONFIG.catalog.services || []).map(s => 
+              `<option value="${esc(s.serviceKey)}">${esc(s.label)}</option>`
+            ).join('')}
+          </select>
         </label>
         <label class="block">
-          <span class="lbl">Service *</span>
-          <select class="inp subType" required disabled></select>
+          <span class="lbl">Service Type *</span>
+          <select class="inp subType" required disabled>
+            <option value="">First select a category</option>
+          </select>
         </label>
       </div>
-      <div class="row eventRow" style="display:none;">
+
+      <!-- Event Details -->
+      <div class="eventRow row" style="display:none;">
         <label class="block">
-          <span class="lbl">Date *</span>
+          <span class="lbl">Date</span>
           <input type="date" class="inp date" />
         </label>
         <label class="block">
-          <span class="lbl">Time *</span>
+          <span class="lbl">Time</span>
           <input type="time" class="inp time" />
         </label>
       </div>
-      <label class="block locationRow" style="display:none;">
-        <span class="lbl">Location *</span>
-        <input type="text" class="inp location" placeholder="Venue / Address" />
-      </label>
 
-      <div class="row qtyRow" style="display:none;">
-        <label class="block hoursWrap">
-          <span class="lbl">Hours *</span>
-          <input type="number" min="1" value="1" class="inp hours" />
+      <div class="locationRow" style="display:none;">
+        <label class="block">
+          <span class="lbl">Venue Address</span>
+          <input type="text" class="inp location" placeholder="Street address, city, state" />
         </label>
-        <div class="filmLenWrap" style="display:none;">
-          <label class="block">
-            <span class="lbl">Expected Film Length (minutes) *</span>
-            <input type="range" min="0.5" max="20" step="0.5" value="1" class="w-full filmSlider" />
+      </div>
+
+      <!-- Quantity Controls -->
+      <div class="qtyRow row" style="display:none;">
+        <label class="block">
+          <span class="lbl">Hours</span>
+          <input type="number" min="1" class="inp hours" value="1" />
+        </label>
+      </div>
+
+      <div class="headshotRow" style="display:none;">
+        <label class="block">
+          <span class="lbl">Number of Headshots</span>
+          <input type="number" min="1" class="inp headshots" value="1" />
+        </label>
+      </div>
+
+      <div class="filmLenWrap" style="display:none;">
+        <label class="block">
+          <span class="lbl">Film Length (minutes)</span>
+          <input type="range" min="1" max="30" value="1" class="filmSlider" />
+          <div class="text-center text-sm text-gray-600 mt-1">
+            <span class="filmLenDisplay">1</span> minute(s)
+          </div>
+        </label>
+      </div>
+
+      <!-- Complexity -->
+      <div class="complexityWrap" style="display:none;">
+        <label class="block">
+          <span class="lbl">Editing Complexity</span>
+          <select class="inp complexity">
+            <option value="simple">Simple</option>
+            <option value="moderate">Moderate</option>
+            <option value="complex">Complex</option>
+          </select>
+          <div class="help text-xs text-gray-600 mt-1"></div>
+        </label>
+      </div>
+
+      <!-- Audio -->
+      <div class="audioWrap" style="display:none;">
+        <span class="lbl">Audio Recording</span>
+        <div class="mt-2 space-y-1">
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="audio-${svc.id}" value="yes" />
+            <span>Yes, record audio</span>
           </label>
-          <div class="flex items-center gap-2 mt-2">
-            <input type="number" min="0.5" step="0.5" value="1" class="inp units" />
-            <span class="text-sm text-gray-600">min</span>
-          </div>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="audio-${svc.id}" value="no" />
+            <span>No audio needed</span>
+          </label>
         </div>
       </div>
 
-      <div class="row headshotRow" style="display:none;">
-        <label class="block">
-          <span class="lbl">Number of Headshots *</span>
-          <input type="number" min="1" value="1" class="inp headshots" />
-        </label>
-      </div>
-
-      <div class="row complexityWrap" style="display:none;">
-        <label class="block">
-          <span class="lbl">Editing Complexity *</span>
-          <select class="inp complexity"></select>
-        </label>
-        <div class="card bg-gray-50 border border-gray-200 text-sm text-gray-700 help"></div>
-      </div>
-
-      <div class="row audioWrap" style="display:none;">
-        <div>
-          <div class="lbl mb-2">Is audio recording necessary? *</div>
-          <div class="flex items-center gap-6 text-sm">
-            <label class="inline-flex items-center gap-2"><input type="radio" name="audio-${svc.id}" value="yes" /> Yes</label>
-            <label class="inline-flex items-center gap-2"><input type="radio" name="audio-${svc.id}" value="no" /> No</label>
-          </div>
-        </div>
-      </div>
-
+      <!-- Enhanced Add-ons Section -->
       <div class="card bg-gray-50 border border-gray-200 addonsWrap" style="display:none;">
-        <div class="lbl mb-3">Add-ons</div>
-        <div class="addonsList grid gap-3"></div>
+        <h4 class="font-bold mb-3">Add-ons</h4>
+        <div class="addonsList space-y-3">
+          <!-- Add-ons will be populated here -->
+        </div>
       </div>
     `;
 
     const typeSel = wrap.querySelector('.serviceType');
-    typeSel.innerHTML = (CONFIG.catalog.services||[]).map(s=>`<option value="${s.serviceKey}">${esc(s.serviceName)}</option>`).join('');
     const subSel = wrap.querySelector('.subType');
 
-    function resetServiceUI(){
-      svc.hours = 1; svc.units = 1; svc.complexity = 'simple'; svc.audio = null; svc.addons = {}; svc.addonHours = {};
-      ['.hours','.units','.headshots'].forEach(sel=>{ const el=wrap.querySelector(sel); if(el){ el.value=1; el.required=false; }});
-      const filmEl=wrap.querySelector('.filmSlider'); if(filmEl){ filmEl.value=1; updateSliderFill(filmEl); }
-      const help=wrap.querySelector('.help'); if(help) help.textContent='';
-      wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=>{ r.checked=false; r.required=false; });
-        const hide = sel => { const el=wrap.querySelector(sel); if(el) el.style.display='none'; };
-      hide('.addonsWrap'); wrap.querySelector('.addonsList').innerHTML='';
-      hide('.complexityWrap'); hide('.filmLenWrap'); hide('.qtyRow'); hide('.headshotRow'); hide('.audioWrap');
-      const dateEl=wrap.querySelector('.date'); if(dateEl){ dateEl.value=''; dateEl.required=false; }
-      const timeEl=wrap.querySelector('.time'); if(timeEl){ timeEl.value=''; timeEl.required=false; }
-      const locEl=wrap.querySelector('.location'); if(locEl){ locEl.value=''; locEl.required=false; }
-      hide('.eventRow'); hide('.locationRow');
+    // Enhanced reset function
+    function resetServiceUI() {
+      svc.hours = 1;
+      svc.units = 1;
+      svc.complexity = 'simple';
+      svc.audio = null;
+      svc.addons = {};
+      svc.addonHours = {};
+      svc.addonLabels = {}; // Enhanced: Reset addon labels
+
+      ['.hours', '.units', '.headshots'].forEach(sel => {
+        const el = wrap.querySelector(sel);
+        if (el) {
+          el.value = 1;
+          el.required = false;
+        }
+      });
+
+      const filmEl = wrap.querySelector('.filmSlider');
+      if (filmEl) {
+        filmEl.value = 1;
+        updateSliderFill(filmEl);
+      }
+
+      const help = wrap.querySelector('.help');
+      if (help) help.textContent = '';
+
+      wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r => {
+        r.checked = false;
+        r.required = false;
+      });
+
+      const hide = sel => {
+        const el = wrap.querySelector(sel);
+        if (el) el.style.display = 'none';
+      };
+      
+      hide('.addonsWrap');
+      wrap.querySelector('.addonsList').innerHTML = '';
+      hide('.complexityWrap');
+      hide('.filmLenWrap');
+      hide('.qtyRow');
+      hide('.headshotRow');
+      hide('.audioWrap');
+      
+      const dateEl = wrap.querySelector('.date');
+      if (dateEl) {
+        dateEl.value = '';
+        dateEl.required = false;
+      }
+      
+      const timeEl = wrap.querySelector('.time');
+      if (timeEl) {
+        timeEl.value = '';
+        timeEl.required = false;
+      }
+      
+      const locEl = wrap.querySelector('.location');
+      if (locEl) {
+        locEl.value = '';
+        locEl.required = false;
+      }
+      
+      hide('.eventRow');
+      hide('.locationRow');
     }
 
-    function refreshSubs(){
+    function refreshSubs() {
       const key = typeSel.value;
-      const subs = (CONFIG.catalog.pricing||[]).filter(p=>p.serviceKey===key);
-      subSel.innerHTML = '<option value="" disabled selected>Select a service</option>' + subs.map(s=>`<option value="${s.offeringId}">${esc(s.subType)}</option>`).join('');
-      subSel.disabled = false; 
-      svc.serviceKey = key; 
-      svc.subType = ''; 
-      svc.offeringId = '';
-      resetServiceUI(); 
-      updateQuote(); 
-      updateSubmitState(); 
+      const subs = (CONFIG.catalog.pricing || []).filter(p => p.serviceKey === key);
+      subSel.innerHTML = `<option value="">Choose service...</option>` +
+        subs.map(p => `<option value="${esc(p.offeringId)}">${esc(p.subType)}</option>`).join('');
+      subSel.disabled = !subs.length;
+      resetServiceUI();
+      updateSubmitState();
       sendHeight();
     }
 
-    function renderComplexity(meta){
-      const compWrap = wrap.querySelector('.complexityWrap');
-      const compSel = wrap.querySelector('.complexity');
-      const help    = wrap.querySelector('.help');
-      if (serviceEligibleForComplexity(meta)){
-        compWrap.style.display='';
-        const opts = [];
-        if (meta.complexityBase?.simple   != null) opts.push('<option value="simple">Simple</option>');
-        if (meta.complexityBase?.moderate != null) opts.push('<option value="moderate">Moderate</option>');
-        if (meta.complexityBase?.complex  != null) opts.push('<option value="complex">Complex</option>');
-        compSel.innerHTML = opts.join('');
-        compSel.value = opts[0]?.match(/value="(.*?)"/)?.[1] || 'simple';
-        svc.complexity = compSel.value;
-        const text = meta.complexityTexts?.[svc.complexity] || '';
-        help.textContent = text;
-        compSel.onchange = ()=>{ svc.complexity = compSel.value; help.textContent = meta.complexityTexts?.[svc.complexity] || ''; updateQuote(); };
-      } else {
-        compWrap.style.display='none';
-        svc.complexity = 'simple';
-      }
-    }
-
-    function applicableAddons(meta){
-      const cat = (meta.serviceKey||'').toLowerCase();
+    // Enhanced addon rendering with better data structure
+    function applicableAddons(meta) {
+      const cat = (meta.serviceKey || '').toLowerCase();
       const off = meta.offeringId;
-      return (CONFIG.catalog.addons||[]).filter(a=>{
-        const byCat = (a.appliesToCategories||[]).map(x=>String(x).toLowerCase()).includes(cat);
-        const byOff = (a.appliesToOfferings||[]).includes(off);
+      return (CONFIG.catalog.addons || []).filter(a => {
+        const byCat = (a.appliesToCategories || []).map(x => String(x).toLowerCase()).includes(cat);
+        const byOff = (a.appliesToOfferings || []).includes(off);
         return byCat || byOff;
       });
     }
 
-    function renderAddons(meta){
+    function renderAddons(meta) {
       const list = wrap.querySelector('.addonsList');
-      list.innerHTML='';
+      list.innerHTML = '';
       const adds = applicableAddons(meta);
-      if (!adds.length){ wrap.querySelector('.addonsWrap').style.display='none'; return; }
-      wrap.querySelector('.addonsWrap').style.display='';
+      
+      if (!adds.length) {
+        wrap.querySelector('.addonsWrap').style.display = 'none';
+        return;
+      }
+      
+      wrap.querySelector('.addonsWrap').style.display = '';
 
-      adds.forEach(ad=>{
+      adds.forEach(ad => {
         const row = document.createElement('div');
-        row.className = 'grid md:grid-cols-2 gap-3 items-end';
+        row.className = 'addon-row border border-gray-200 rounded-lg';
         row.dataset.addonId = ad.id;
 
         const label = document.createElement('div');
+        label.className = 'mb-2';
         label.innerHTML = `
           <div class="lbl">${esc(ad.label)}</div>
-          <div class="text-xs text-gray-600">Pricing: ${esc(ad.pricingMode)}${ad.rate?` @ ${money(ad.rate)}`:''}</div>
+          <div class="text-xs text-gray-600">Pricing: ${esc(ad.pricingMode)}${ad.rate ? ` @ ${money(ad.rate)}` : ''}</div>
         `;
         row.appendChild(label);
 
         let control;
-        const mode = (ad.selectionMode||'boolean').toLowerCase();
-        if (mode==='integer'){
-          control = document.createElement('label'); control.className='block';
-          const max = Number(ad.maxQty)||2; const opts = Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join('');
+        const mode = (ad.selectionMode || 'boolean').toLowerCase();
+        
+        if (mode === 'integer') {
+          control = document.createElement('label');
+          control.className = 'block';
+          const max = Number(ad.maxQty) || 2;
+          const opts = Array.from({ length: max + 1 }, (_, i) => `<option value="${i}">${i}</option>`).join('');
           control.innerHTML = `<span class="lbl">Quantity</span><select class="inp addonQty">${opts}</select>`;
-        } else if (mode==='string'){
-          control = document.createElement('label'); control.className='block';
+        } else if (mode === 'string') {
+          control = document.createElement('label');
+          control.className = 'block';
           control.innerHTML = `<span class="lbl">Details</span><input type="text" class="inp addonText" placeholder="Enter details" />`;
         } else {
-          control = document.createElement('label'); control.className='inline-flex items-center gap-2';
+          control = document.createElement('label');
+          control.className = 'inline-flex items-center gap-2';
           control.innerHTML = `<input type="checkbox" class="addonBool" /><span>Include</span>`;
         }
+        
         row.appendChild(control);
 
-        // For per-minute services that need hours estimate — except Additional Camera which inherits service hours
-        if (meta.priceUnit==='perMinute' && ad.needsHoursForPerMinute && String(ad.label||'').toLowerCase()!=='additional camera'){
-          const hoursWrap = document.createElement('label'); hoursWrap.className='block';
+        // Hours estimation for per-minute services
+        if (meta.priceUnit === 'perMinute' && ad.needsHoursForPerMinute && String(ad.label || '').toLowerCase() !== 'additional camera') {
+          const hoursWrap = document.createElement('label');
+          hoursWrap.className = 'block mt-3';
           hoursWrap.innerHTML = `<span class="lbl">Estimated shoot hours</span><input type="number" min="1" value="1" class="inp addonHours" />`;
           row.appendChild(hoursWrap);
         }
 
         list.appendChild(row);
 
-        const updateVals = ()=>{
+        // Enhanced update function with better data collection
+        const updateVals = () => {
           const qtySel = row.querySelector('.addonQty');
-          const txt    = row.querySelector('.addonText');
-          const chk    = row.querySelector('.addonBool');
-          const hrs    = row.querySelector('.addonHours');
-          if (qtySel) svc.addons[ad.id] = Number(qtySel.value||0);
-          else if (txt) svc.addons[ad.id] = txt.value || '';
-          else if (chk) svc.addons[ad.id] = chk.checked ? 1 : 0;
-          if (hrs) svc.addonHours[ad.id] = Math.max(1, Number(hrs.value)||1);
+          const txt = row.querySelector('.addonText');
+          const chk = row.querySelector('.addonBool');
+          const hrs = row.querySelector('.addonHours');
+
+          // Store addon label for webhook data
+          svc.addonLabels[ad.id] = ad.label;
+
+          if (qtySel) {
+            const value = Number(qtySel.value || 0);
+            svc.addons[ad.id] = value;
+            row.classList.toggle('addon-selected', value > 0);
+          } else if (txt) {
+            const value = txt.value || '';
+            svc.addons[ad.id] = value;
+            row.classList.toggle('addon-selected', value.trim().length > 0);
+          } else if (chk) {
+            const value = chk.checked ? 1 : 0;
+            svc.addons[ad.id] = value;
+            row.classList.toggle('addon-selected', chk.checked);
+          }
+
+          if (hrs) {
+            svc.addonHours[ad.id] = Math.max(1, Number(hrs.value) || 1);
+          }
+
           updateQuote();
         };
+
         row.addEventListener('input', updateVals);
         row.addEventListener('change', updateVals);
       });
     }
 
-    function toggleForSub(){
-      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-      if (!meta){ resetServiceUI(); updateSubmitState(); sendHeight(); return; }
+    // Event handlers
+    typeSel.addEventListener('change', refreshSubs);
 
-      // Basic flags
+    subSel.addEventListener('change', function() {
+      const offeringId = this.value;
+      const meta = (CONFIG.catalog.pricing || []).find(p => p.offeringId === offeringId);
+      
+      if (!meta) {
+        resetServiceUI();
+        updateSubmitState();
+        sendHeight();
+        return;
+      }
+
+      // Update service state
+      svc.offeringId = offeringId;
+      svc.serviceKey = meta.serviceKey;
+      svc.subType = meta.subType;
+
+      // Configure UI based on service type
       const unit = meta.priceUnit || 'flat';
-      const isEvent = !!meta.isEvent;
+      const isEvent = ['videography', 'photography'].includes(meta.serviceKey.toLowerCase());
 
-      // Event basics
-      wrap.querySelector('.eventRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.locationRow').style.display = isEvent ? '' : 'none';
-      wrap.querySelector('.date').required = isEvent;
-      wrap.querySelector('.time').required = isEvent;
-      wrap.querySelector('.location').required = isEvent;
+      // Show/hide relevant fields
+      const show = (sel, required = false) => {
+        const el = wrap.querySelector(sel);
+        if (el) {
+          el.style.display = '';
+          if (required) el.required = true;
+        }
+      };
 
-      // Quantities
-      wrap.querySelector('.qtyRow').style.display = (unit==='perHour' || unit==='perMinute') ? '' : 'none';
-      wrap.querySelector('.hoursWrap').style.display = (unit==='perHour') ? '' : 'none';
-      wrap.querySelector('.filmLenWrap').style.display = (unit==='perMinute') ? '' : 'none';
-      wrap.querySelector('.headshotRow').style.display = (unit==='perHeadshot') ? '' : 'none';
-      wrap.querySelector('.hours').required = (unit==='perHour');
-      const unitsEl = wrap.querySelector('.units'); if (unitsEl) unitsEl.required = (unit==='perMinute');
-      const headEl = wrap.querySelector('.headshots'); if (headEl) headEl.required = (unit==='perHeadshot');
+      const hide = sel => {
+        const el = wrap.querySelector(sel);
+        if (el) {
+          el.style.display = 'none';
+          el.required = false;
+        }
+      };
 
-      if (unit==='perHeadshot'){ const h = wrap.querySelector('.headshots'); if (h){ svc.units = Math.max(1, Number(h.value)||1); } }
+      // Event details
+      if (isEvent || meta.requiresEventDetails) {
+        show('.eventRow');
+        show('.locationRow');
+        const dateEl = wrap.querySelector('.date');
+        const timeEl = wrap.querySelector('.time');
+        const locEl = wrap.querySelector('.location');
+        if (dateEl) dateEl.required = true;
+        if (timeEl) timeEl.required = true;
+        if (locEl) locEl.required = true;
+      }
+
+      // Quantity controls
+      if (unit === 'perHour') {
+        show('.qtyRow');
+        wrap.querySelector('.hours').required = true;
+      } else if (unit === 'perHeadshot') {
+        show('.headshotRow');
+        wrap.querySelector('.headshots').required = true;
+      } else if (unit === 'perMinute') {
+        show('.filmLenWrap');
+      }
 
       // Complexity
-      renderComplexity(meta);
+      if (['Video Editing', 'Dance Film Production'].includes(meta.subType)) {
+        show('.complexityWrap');
+        const compSel = wrap.querySelector('.complexity');
+        const help = wrap.querySelector('.help');
+        compSel.addEventListener('change', () => {
+          svc.complexity = compSel.value;
+          help.textContent = meta.complexityTexts?.[svc.complexity] || '';
+          updateQuote();
+        });
+      }
 
       // Audio
-      const showAudio = !!meta.showAudioOption;
-      wrap.querySelector('.audioWrap').style.display = showAudio ? '' : 'none';
-      wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.required = showAudio);
+      const audioEligible = ['Dance Reel Express', 'Event Videography', 'Dance Film Production', 'Rehearsal Videography', 'Audition Reel'];
+      if (audioEligible.includes(meta.subType)) {
+        show('.audioWrap');
+        wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r => {
+          r.required = true;
+          r.addEventListener('change', () => {
+            if (r.checked) {
+              svc.audio = r.value;
+              updateQuote();
+            }
+          });
+        });
+      }
 
-      // Add-ons
-      renderAddons({ ...meta, offeringId: svc.offeringId });
+      // Render add-ons
+      renderAddons(meta);
 
-      const fs = wrap.querySelector('.filmSlider'); if (fs) updateSliderFill(fs);
-      updateSubmitState(); sendHeight();
-    }
-
-    // Listeners
-    typeSel.addEventListener('change', () => { refreshSubs(); });
-    subSel.addEventListener('change', () => {
-      const offId = subSel.value;
-      const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===offId);
-      svc.offeringId = offId; svc.serviceKey = meta?.serviceKey||''; svc.subType = meta?.subType||'';
-      toggleForSub(); updateQuote(); updateSubmitState();
+      updateQuote();
+      updateSubmitState();
+      sendHeight();
     });
-    refreshSubs();
 
-    // Qty & length - add validation triggers
-    wrap.querySelector('.hours').addEventListener('input', (e)=>{ svc.hours = Math.max(1, Number(e.target.value)||1); updateQuote(); updateSubmitState(); });
-    const filmSlider = wrap.querySelector('.filmSlider');
-    const unitsInput = wrap.querySelector('.units');
-    if (filmSlider){ updateSliderFill(filmSlider); filmSlider.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (unitsInput) unitsInput.value = svc.units; updateSliderFill(filmSlider); updateQuote(); updateSubmitState(); }); }
-    if (unitsInput){ unitsInput.addEventListener('input',(e)=>{ svc.units = Number(e.target.value)||1; if (filmSlider){ filmSlider.value = svc.units; updateSliderFill(filmSlider); } updateQuote(); updateSubmitState(); }); }
-    const headshotsInput = wrap.querySelector('.headshots');
-    if (headshotsInput){ headshotsInput.addEventListener('input', (e)=>{ svc.units = Math.max(1, Number(e.target.value)||1); updateQuote(); updateSubmitState(); }); }
+    // Input handlers
+    wrap.addEventListener('input', (e) => {
+      const target = e.target;
+      if (target.classList.contains('date')) svc.date = target.value;
+      else if (target.classList.contains('time')) svc.time = target.value;
+      else if (target.classList.contains('location')) svc.location = target.value;
+      else if (target.classList.contains('hours')) svc.hours = Math.max(1, Number(target.value) || 1);
+      else if (target.classList.contains('headshots')) svc.units = Math.max(1, Number(target.value) || 1);
+      else if (target.classList.contains('filmSlider')) {
+        svc.units = Number(target.value) || 1;
+        wrap.querySelector('.filmLenDisplay').textContent = svc.units;
+        updateSliderFill(target);
+      }
+      
+      updateQuote();
+    });
 
-    // Date/time/location - add validation triggers
-    wrap.querySelector('.date').addEventListener('change', e=>{ svc.date = e.target.value; updateQuote(); updateSubmitState(); });
-    wrap.querySelector('.time').addEventListener('change', e=>{ svc.time = e.target.value; updateQuote(); updateSubmitState(); });
-    wrap.querySelector('.location').addEventListener('input', e=>{ svc.location = e.target.value; updateQuote(); updateSubmitState(); });
-
-    // Audio choice - add validation trigger
-    wrap.querySelectorAll(`input[name="audio-${svc.id}"]`).forEach(r=> r.addEventListener('change', (e)=>{ svc.audio = e.target.value; updateQuote(); updateSubmitState(); }));
-
-    // Remove card
-    const removeBtn = wrap.querySelector('.remove');
-    if (removeBtn){ removeBtn.addEventListener('click', ()=>{ state.services = state.services.filter(x=>x.id!==svc.id); wrap.remove(); updateQuote(); updateSubmitState(); sendHeightImmediate(); }); }
+    // Remove service handler
+    const removeBtn = wrap.querySelector('.removeService');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        state.services = state.services.filter(x => x.id !== svc.id);
+        wrap.remove();
+        updateQuote();
+        updateSubmitState();
+        sendHeight();
+      });
+    }
 
     return wrap;
   }
 
-  // -------- PRICING --------
-  function addonCostForService(meta, svc){
-    const adds = (CONFIG.catalog.addons||[]).filter(a=>{
-      const byCat = (a.appliesToCategories||[]).map(x=>String(x).toLowerCase()).includes((meta.serviceKey||'').toLowerCase());
-      const byOff = (a.appliesToOfferings||[]).includes(meta.offeringId);
-      return byCat || byOff;
-    });
-    let total=0; const lines=[];
-    adds.forEach(ad=>{
-      const val = svc.addons[ad.id];
-      const hasVal = (ad.selectionMode==='boolean') ? !!val : (ad.selectionMode==='integer' ? (Number(val)||0) > 0 : !!val);
-      if (!hasVal) return;
-      let qty = 1;
-      if (ad.selectionMode==='integer') qty = Math.min(Math.max(0, Number(val)||0), Number(ad.maxQty)||99);
-      if (ad.selectionMode==='string') qty = 0; // informational only
-
-      let cost = 0; let desc = ad.label;
-      const mode = (ad.pricingMode||'flat');
-      if (mode==='flat'){ 
-        cost = (ad.rate||0) * qty; 
-        if (qty > 1) {
-          desc += ` ${money(ad.rate)} each × ${qty}`;
-        } else {
-          desc += ` (flat rate)`;
-        }
-      }
-      else if (mode==='perHour'){
-        const inherit = String(ad.label||'').toLowerCase()==='additional camera';
-        const hrs = inherit ? (Number(svc.hours)||1) : (meta.priceUnit==='perHour' ? (Number(svc.hours)||1) : (Number(svc.addonHours[ad.id])||1));
-        cost = (ad.rate||0) * qty * hrs; 
-        if (qty > 1) {
-          desc += ` ${money(ad.rate)}/hour × ${qty} × ${hrs} hour${hrs !== 1 ? 's' : ''}`;
-        } else {
-          desc += ` ${money(ad.rate)}/hour for ${hrs} hour${hrs !== 1 ? 's' : ''}`;
-        }
-      }
-      else if (mode==='perMinute'){
-        const mins = (Number(svc.units)||1);
-        cost = (ad.rate||0) * qty * mins; 
-        if (qty > 1) {
-          desc += ` ${money(ad.rate)}/minute × ${qty} × ${mins} minute${mins !== 1 ? 's' : ''}`;
-        } else {
-          desc += ` ${money(ad.rate)}/minute for ${mins} minute${mins !== 1 ? 's' : ''}`;
-        }
-      }
-      if (cost>0) { lines.push({label: desc, cost}); total += cost; }
-    });
-    return { total, lines };
+  // Add service functionality
+  function addService() {
+    const id = Date.now() + Math.random();
+    const svc = createServiceState(id);
+    state.services.push(svc);
+    
+    const card = buildServiceCard(svc);
+    document.getElementById('servicesContainer').appendChild(card);
+    
+    updateSubmitState();
+    sendHeight();
   }
 
-  function baseCostForService(meta, svc){
-    const unit = meta.priceUnit || 'flat';
-    let baseRate = Number(meta.basePrice)||0;
-    if (meta.complexityBase && serviceEligibleForComplexity(meta)){
-      baseRate = Number(meta.complexityBase[svc.complexity] ?? baseRate) || 0;
-    }
-    const qty = unit==='perHour' ? (Number(svc.hours)||1)
-              : unit==='perMinute' ? (Number(svc.units)||1)
-              : unit==='perHeadshot' ? (Number(svc.units)||1)
-              : 1;
-    let base = baseRate * ((unit==='perHour'||unit==='perMinute'||unit==='perHeadshot') ? qty : 1);
-    const lines = [];
-
-    // Create natural language descriptions
-    let baseLabel = esc(meta.subType || 'Service');
-    if (unit === 'perHour') {
-      baseLabel += ` ${money(baseRate)}/hour for ${qty} hour${qty !== 1 ? 's' : ''}`;
-    } else if (unit === 'perMinute') {
-      baseLabel += ` ${money(baseRate)}/minute for ${qty} minute${qty !== 1 ? 's' : ''}`;
-    } else if (unit === 'perHeadshot') {
-      baseLabel += ` ${money(baseRate)} per headshot × ${qty} headshot${qty !== 1 ? 's' : ''}`;
-    } else {
-      baseLabel += ' (flat rate)';
-    }
+  // Quote calculation
+  function updateQuote() {
+    if (!CONFIG.catalog) return;
     
-    lines.push({label: baseLabel, cost: base});
+    let total = 0;
+    let breakdown = '';
+    const discountPercent = bestDiscountPercent();
 
-    // Setup time (hours -> charge base hourly rate * setupTime) for videography hourly
-    let setupFee = 0;
-    if (isVideography(meta) && unit==='perHour' && Number(meta.setupTime)>0){
-      setupFee = (Number(meta.basePrice)||0) * Number(meta.setupTime);
-      if (setupFee>0) {
-        const setupLabel = `Setup & breakdown ${money(meta.basePrice)}/hour for ${money(meta.setupTime)} hour${Number(meta.setupTime) !== 1 ? 's' : ''}`;
-        lines.push({label: setupLabel, cost: setupFee});
+    state.services.forEach((svc, idx) => {
+      const meta = (CONFIG.catalog.pricing || []).find(p => p.offeringId === svc.offeringId);
+      if (!meta) return;
+
+      let serviceTotal = 0;
+      const unit = meta.priceUnit || 'flat';
+      const rate = Number(meta.rate) || 0;
+
+      if (unit === 'flat') {
+        serviceTotal = rate;
+      } else if (unit === 'perHour') {
+        serviceTotal = rate * (Number(svc.hours) || 1);
+      } else if (unit === 'perMinute') {
+        serviceTotal = rate * (Number(svc.units) || 1);
+      } else if (unit === 'perHeadshot') {
+        serviceTotal = rate * (Number(svc.units) || 1);
       }
-    }
 
-    if (meta.studioRequired) lines.push({label: 'Studio rental (billed separately)', cost: 0});
+      // Add addon costs
+      let addonCost = 0;
+      Object.keys(svc.addons).forEach(addonId => {
+        const addonValue = svc.addons[addonId];
+        const addon = (CONFIG.catalog.addons || []).find(a => a.id === addonId);
+        if (!addon || !addonValue) return;
 
-    return { base, setupFee, lines };
-  }
+        const addonRate = Number(addon.rate) || 0;
+        const addonMode = (addon.pricingMode || '').toLowerCase();
 
-  function costForService(svc){
-    const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-    if (!meta) return { subtotal:0, lines:[], chartData: [] };
-
-    const base = baseCostForService(meta, svc);
-    const addons = addonCostForService({ ...meta, offeringId: svc.offeringId }, svc);
-
-    const subtotal = base.base + base.setupFee + addons.total;
-    const lines = [...base.lines, ...addons.lines];
-    
-    // Create chart data from cost lines
-    const chartData = lines.filter(line => line.cost > 0).map(line => ({
-      label: line.label,
-      value: line.cost
-    }));
-    
-    return { subtotal, lines, chartData };
-  }
-
-  function updateQuote(){
-    const breakdown = []; 
-    const chartData = [];
-    let grand = 0;
-    
-    state.services.forEach((svc, idx)=>{
-      if (!svc.offeringId) return;
-      const res = costForService(svc);
-      grand += res.subtotal; 
-      
-      // Add service prefix for multiple services
-      const prefix = idx > 0 ? `Service ${idx + 1}: ` : '';
-      
-      res.lines.forEach(line => {
-        const displayText = `${prefix}${line.label}: ${money(line.cost)}${line.cost === 0 ? '' : ''}`;
-        breakdown.push(displayText);
-        
-        if (line.cost > 0) {
-          chartData.push({
-            label: `${prefix}${line.label}`,
-            value: line.cost
-          });
+        if (addonMode === 'flat') {
+          if (typeof addonValue === 'number' && addonValue > 0) addonCost += addonRate;
+          else if (typeof addonValue === 'string' && addonValue.trim()) addonCost += addonRate;
+        } else if (addonMode === 'per-quantity') {
+          addonCost += addonRate * (Number(addonValue) || 0);
         }
+        // Add more pricing modes as needed
       });
+
+      serviceTotal += addonCost;
+      total += serviceTotal;
+
+      if (idx === 0) breakdown += `Service ${idx + 1}: ${meta.subType}\n`;
+      else breakdown += `\nService ${idx + 1}: ${meta.subType}\n`;
+      
+      breakdown += `  Base: ${money(serviceTotal - addonCost)}\n`;
+      if (addonCost > 0) breakdown += `  Add-ons: ${money(addonCost)}\n`;
+      breakdown += `  Subtotal: ${money(serviceTotal)}`;
     });
 
-    if (grand === 0){ 
-      $('#quoteTotal').textContent = '$0.00'; 
-      $('#quoteBreakdown').innerHTML = '<div class="text-gray-500">—</div>';
-      // Clear chart but show background ring
-      const canvas = document.getElementById('donutChart');
-      if (canvas) createDonutChart(canvas, []);
-      updateSubmitState(); sendHeight(); return; 
+    if (discountPercent > 0) {
+      const discountAmount = total * (discountPercent / 100);
+      breakdown += `\n\nSubtotal: ${money(total)}`;
+      breakdown += `\nDiscount (${discountPercent}%): -${money(discountAmount)}`;
+      total -= discountAmount;
     }
+
+    document.getElementById('quoteTotal').textContent = money(total);
+    document.getElementById('quoteBreakdown').textContent = breakdown;
     
-    const best = bestDiscountPercent(); 
-    let discountAmount = 0;
-    if (best > 0) {
-      discountAmount = grand * (best / 100);
-      breakdown.push(`Discount (${best}%): -${money(discountAmount)}`);
-    }
-    
-    const total = Math.max(0, grand * (1 - best/100));
-    $('#quoteTotal').textContent = `${money(total)}`;
-    
-    // Create breakdown with color indicators
-    const coloredBreakdown = breakdown.map((line, idx) => {
-      const isDiscount = line.includes('Discount');
-      const hasChartData = chartData[idx] && !isDiscount;
-      
-      let color = '#6b7280'; // Default grey
-      if (isDiscount) {
-        color = '#10b981'; // Green for discount
-      } else if (hasChartData) {
-        color = CHART_COLORS[idx % CHART_COLORS.length];
-      }
-      
-      const textColor = isDiscount ? 'text-green-600' : '';
-      
-      // Parse the line to separate description and cost
-      const parts = line.split(': ');
-      if (parts.length === 2 && !isDiscount) {
-        const description = parts[0];
-        const cost = parts[1];
-        return `<div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 flex-1">
-            <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-            <span class="text-sm">${esc(description)}</span>
-          </div>
-          <span class="text-sm font-medium text-right">${cost}</span>
-        </div>`;
-      } else {
-        // Handle discount lines and other special cases
-        return `<div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></div>
-          <span class="text-sm ${textColor}">${esc(line)}</span>
-        </div>`;
-      }
-    }).join('');
-    
-    $('#quoteBreakdown').innerHTML = coloredBreakdown;
-    
-    // Update donut chart (always call to ensure background ring is drawn)
-    const canvas = document.getElementById('donutChart');
-    if (canvas) {
-      createDonutChart(canvas, chartData);
-    }
-    
-    updateSubmitState(); sendHeight();
+    sendHeightDebounced();
   }
 
-  function updateSubmitState(){
+  function bestDiscountPercent() {
+    const discount = document.querySelector('input[name="selfDiscount"]:checked')?.value;
+    switch (discount) {
+      case 'student': case 'nonprofit': return 10;
+      case 'artist': return 20;
+      default: return 0;
+    }
+  }
+
+  // Form validation
+  function updateSubmitState() {
     const btn = document.getElementById('submitBtn');
-    if (btn && btn.dataset.loading==='1') return;
-    
-    // Manual validation check - more reliable than checkValidity()
+    if (btn && btn.dataset.loading === '1') return;
+
     const errors = [];
     
-    // Check basic identity fields
+    // Basic fields
     const firstName = document.getElementById('firstNameInput').value.trim();
     const lastName = document.getElementById('lastNameInput').value.trim();
     const email = document.getElementById('emailInput').value.trim();
@@ -929,165 +927,55 @@
     if (!email) errors.push('Email required');
     if (email && !email.includes('@')) errors.push('Valid email required');
     
-    // Check required checkboxes
-    const tosCheck = document.getElementById('tosCheck');
-    const understandCheck = document.getElementById('understandCheck');
-    if (!tosCheck.checked) errors.push('Terms of Service agreement required');
-    if (!understandCheck.checked) errors.push('Booking acknowledgment required');
+    // Required checkboxes
+    const tosCheck = document.getElementById('tosCheck')?.checked;
+    const understandCheck = document.getElementById('understandCheck')?.checked;
+    if (!tosCheck) errors.push('Terms of service agreement required');
+    if (!understandCheck) errors.push('Booking acknowledgment required');
     
-    // Check each service for completeness
+    // Services
+    if (!state.services.length) errors.push('At least one service required');
+    
     state.services.forEach((svc, idx) => {
-      const serviceLabel = idx === 0 ? 'Primary service' : `Service ${idx + 1}`;
+      if (!svc.offeringId) errors.push(`Service ${idx + 1} type required`);
       
-      // Check if service type and subtype are selected
-      if (!svc.serviceKey) errors.push(`${serviceLabel}: Service type required`);
-      if (!svc.offeringId) errors.push(`${serviceLabel}: Service selection required`);
-      
-      if (svc.offeringId) {
-        const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===svc.offeringId);
-        if (meta) {
-          const unit = meta.priceUnit || 'flat';
-          const isEvent = !!meta.isEvent;
-          const showAudio = !!meta.showAudioOption;
-          
-          // Check event-specific requirements
-          if (isEvent) {
-            if (!svc.date) errors.push(`${serviceLabel}: Date required`);
-            if (!svc.time) errors.push(`${serviceLabel}: Time required`);
-            if (!svc.location.trim()) errors.push(`${serviceLabel}: Location required`);
-          }
-          
-          // Check quantity requirements
-          if (unit === 'perHour' && (!svc.hours || svc.hours < 1)) {
-            errors.push(`${serviceLabel}: Hours required`);
-          }
-          if (unit === 'perMinute' && (!svc.units || svc.units < 0.5)) {
-            errors.push(`${serviceLabel}: Film length required`);
-          }
-          if (unit === 'perHeadshot' && (!svc.units || svc.units < 1)) {
-            errors.push(`${serviceLabel}: Number of headshots required`);
-          }
-          
-          // Check audio requirement
-          if (showAudio && !svc.audio) {
-            errors.push(`${serviceLabel}: Audio recording choice required`);
-          }
+      const meta = (CONFIG.catalog.pricing || []).find(p => p.offeringId === svc.offeringId);
+      if (meta) {
+        const isEvent = ['videography', 'photography'].includes(meta.serviceKey.toLowerCase());
+        if (isEvent || meta.requiresEventDetails) {
+          if (!svc.date) errors.push(`Service ${idx + 1} date required`);
+          if (!svc.time) errors.push(`Service ${idx + 1} time required`);
+          if (!svc.location) errors.push(`Service ${idx + 1} location required`);
+        }
+        
+        // Audio requirement for eligible services
+        const audioEligible = ['Dance Reel Express', 'Event Videography', 'Dance Film Production', 'Rehearsal Videography', 'Audition Reel'];
+        if (audioEligible.includes(meta.subType) && svc.audio === null) {
+          errors.push(`Service ${idx + 1} audio preference required`);
         }
       }
     });
+
+    const isValid = errors.length === 0;
+    btn.disabled = !isValid;
+    btn.className = `btn ${isValid ? 'btn-primary' : 'btn-disabled'}`;
     
-    // Update button state
-    if (errors.length === 0) { 
-      btn.disabled = false; 
-      btn.classList.remove('btn-disabled'); 
-      btn.classList.add('btn-primary'); 
-      btn.textContent = 'Submit Request'; 
-    } else { 
-      btn.disabled = true; 
-      btn.classList.add('btn-disabled'); 
-      btn.classList.remove('btn-primary'); 
-      
-      // Show most relevant error
-      if (errors.some(e => e.includes('First name') || e.includes('Last name') || e.includes('Email'))) {
-        btn.textContent = 'Complete your info to continue';
-      } else if (errors.some(e => e.includes('Terms') || e.includes('acknowledgment'))) {
-        btn.textContent = 'Accept terms to continue';
-      } else if (errors.some(e => e.includes('Service type') || e.includes('Service selection'))) {
-        btn.textContent = 'Select services to continue';
-      } else {
-        btn.textContent = 'Complete service details to continue';
-      }
-    }
+    return isValid;
   }
 
-  function addServiceCard(isPrimary=false){
-    const id = isPrimary ? 'primary' : uid();
-    const svc = createServiceState(id);
-    state.services.push(svc);
-    const card = buildServiceCard(svc);
-    document.getElementById('servicesContainer').appendChild(card);
-  }
+  // Form submission with enhanced addon data
+  async function submitRequest() {
+    const btn = document.getElementById('submitBtn');
+    btn.dataset.loading = '1';
+    btn.innerHTML = '<span class="spinner">⏳</span>Submitting...';
+    btn.disabled = true;
 
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    // 1) Load catalog or show fatal
-    try{
-      const ok = await loadCatalog();
-      if (!ok || !CONFIG.catalog) throw new Error('Catalog failed');
-    }catch(err){
-      console.error('Catalog load failed', err);
-      renderFatal('Our system can\'t load the services catalog right now.');
-      return;
-    }
-
-    // 2) Build primary service card
-    addServiceCard(true);
-
-    // 3) Setup height observers - IMPROVED VERSION
     try {
-      // Use ResizeObserver for better performance
-      if (window.ResizeObserver) {
-        const ro = new ResizeObserver(() => sendHeightDebounced());
-        
-        // Observe the main container
-        const container = document.querySelector('.max-w-4xl');
-        if (container) ro.observe(container);
-        
-        // Observe dynamic content containers
-        const servicesContainer = document.getElementById('servicesContainer');
-        if (servicesContainer) ro.observe(servicesContainer);
-      }
+      const primary = state.services[0] || {};
+      const meta = (CONFIG.catalog.pricing || []).find(p => p.offeringId === primary.offeringId) || {};
+      const unit = meta.priceUnit || 'flat';
 
-      // Use debounced version for input events
-      document.addEventListener('input', sendHeightDebounced);
-      document.addEventListener('change', sendHeightDebounced);
-      
-      // Handle window events
-      window.addEventListener('resize', sendHeightDebounced);
-      
-      // Send initial height
-      setTimeout(() => sendHeightImmediate(), 100);
-      setTimeout(() => sendHeightImmediate(), 300);
-      
-    } catch(e) {
-      console.warn('Height observer setup failed:', e);
-      // Fallback to periodic height checks
-      setInterval(sendHeight, 1000);
-    }
-
-    // 4) Discount listeners
-    document.querySelectorAll('input[name="selfDiscount"]').forEach(r=> r.addEventListener('change', ()=>{ updateQuote(); }));
-
-    // 4.5) Add validation listeners for identity fields and checkboxes
-    document.getElementById('firstNameInput').addEventListener('input', updateSubmitState);
-    document.getElementById('lastNameInput').addEventListener('input', updateSubmitState);
-    document.getElementById('emailInput').addEventListener('input', updateSubmitState);
-    document.getElementById('tosCheck').addEventListener('change', updateSubmitState);
-    document.getElementById('understandCheck').addEventListener('change', updateSubmitState);
-
-    // 5) Add another service
-    document.getElementById('addServiceBtn').addEventListener('click', ()=>{ 
-      addServiceCard(false); 
-      updateQuote(); 
-      updateSubmitState(); 
-      // Use immediate height update for major layout changes
-      setTimeout(() => sendHeightImmediate(), 50);
-    });
-
-    // 6) Form validation hooks
-    const formEl = document.getElementById('intakeForm');
-    formEl.addEventListener('input', updateSubmitState);
-    formEl.addEventListener('change', updateSubmitState);
-
-    // 7) Submit
-    document.getElementById('intakeForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      if (btn && btn.dataset.loading === '1') return;
-      if (!e.target.checkValidity()){ updateSubmitState(); return; }
-
-      if (btn){ btn.dataset.loading = '1'; btn.disabled = true; btn.classList.add('btn-disabled','btn-loading'); btn.classList.remove('btn-primary'); btn.innerHTML = '<svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4" opacity=".25"></circle><path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="4"></path></svg><span>Submitting…</span>'; }
-
-      const primary = state.services[0] || {}; const meta = (CONFIG.catalog.pricing||[]).find(p=>p.offeringId===primary.offeringId) || {}; const unit = meta.priceUnit || 'flat';
+      // Enhanced payload with better addon data structure
       const payload = {
         firstName: document.getElementById('firstNameInput').value,
         lastName: document.getElementById('lastNameInput').value,
@@ -1098,70 +986,121 @@
         mailingOptIn: (document.querySelector('input[name="mailing"]:checked')?.value === 'yes'),
         additionalInfo: document.getElementById('additionalInfo')?.value || '',
         requestedProviders: document.getElementById('requestedProviders')?.value || '',
-        services: state.services,
+        
+        // Enhanced services data with addon details
+        services: state.services.map(svc => ({
+          ...svc,
+          // Ensure addon data is properly structured
+          addons: svc.addons || {},
+          addonHours: svc.addonHours || {},
+          addonLabels: svc.addonLabels || {}, // Include labels for webhook processing
+          
+          // Add metadata for better webhook handling
+          _meta: {
+            serviceCategory: svc.serviceKey,
+            serviceType: svc.subType,
+            pricingUnit: meta.priceUnit || 'flat'
+          }
+        })),
+        
         quoteTotal: document.getElementById('quoteTotal').textContent,
         quoteBreakdown: document.getElementById('quoteBreakdown').innerText,
         primaryDateTime: combineDateTime(primary.date, primary.time),
-        primaryEndTime: (unit==='perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
+        primaryEndTime: (unit === 'perHour' && primary.time && primary.hours) ? addHoursToTime(primary.time, primary.hours) : '',
         primaryVenue: primary.location || '',
         primaryServiceType: meta.subType || '',
-        needsAudioRecording: (isVideography(meta) && !isVideoEditing(meta)) ? (primary.audio==='yes' ? 'Yes, please record audio' : (primary.audio==='no' ? 'No audio required' : '')) : '',
+        needsAudioRecording: (isVideography(meta) && !isVideoEditing(meta)) ? (primary.audio === 'yes' ? 'Yes, please record audio' : (primary.audio === 'no' ? 'No audio required' : '')) : '',
         tosAccepted: !!document.getElementById('tosCheck')?.checked,
         bookingAcknowledge: !!document.getElementById('understandCheck')?.checked
       };
 
-      try{
-        const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
-        const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
+      const url = `${CONFIG.api.baseUrl}${CONFIG.api.webhookPath}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-        // Hide form elements
-        document.getElementById('identityCard').style.display = 'none';
+      if (response.ok) {
+        // Show success message
         document.getElementById('intakeForm').style.display = 'none';
-        
-        const success = document.getElementById('successScreen');
-        if (success){
-          const who = document.getElementById('firstNameInput')?.value || 'Thank you';
-          document.getElementById('successRef').textContent = new Date().toLocaleString();
-          success.querySelector('h2').innerHTML = `Thanks, ${esc(who)} — your request was sent!`;
-          success.style.display = 'block';
-        }
-        
-        // CRITICAL: Use immediate height update for success screen
+        document.getElementById('successMessage').style.display = '';
+        document.getElementById('submissionTime').textContent = new Date().toLocaleString();
         sendHeightImmediate();
-        
-        // Send success message with height
-        setTimeout(() => {
-          const nowH = measureHeight();
-          (ALLOWED_PARENTS||[]).forEach(origin=>{ 
-            try{ 
-              window.parent.postMessage({ type:'ODD_FORM_SUCCESS', height: nowH, ts: Date.now() }, origin); 
-            }catch(_){/*noop*/} 
-          });
-        }, 100);
-        
-      }catch(err){ 
-        console.error(err); 
-        alert('Sorry, something went wrong sending your request. Please try again.'); 
+      } else {
+        throw new Error(`Server error: ${response.status}`);
       }
-      finally{
-        if (btn){ btn.dataset.loading = '0'; btn.disabled = true; btn.classList.add('btn-disabled'); btn.classList.remove('btn-primary','btn-loading'); btn.textContent = 'Submit Request'; }
-        updateSubmitState();
-      }
-    });
 
-    updateSubmitState();
-    
-    // Add periodic validation check to catch any edge cases
-    setInterval(updateSubmitState, 1000);
-    
-    // Initialize chart with background ring
-    const canvas = document.getElementById('donutChart');
-    if (canvas) createDonutChart(canvas, []);
-    
-    // Final initial height
-    sendHeightImmediate();
-  });
-  </script>
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('There was an error submitting your request. Please try again or contact us directly.');
+      
+      btn.dataset.loading = '0';
+      btn.innerHTML = 'Submit Request';
+      btn.disabled = false;
+    }
+  }
+
+  // Helper functions
+  function isVideography(meta) {
+    return (meta.serviceKey || '').toLowerCase() === 'videography';
+  }
+
+  function isVideoEditing(meta) {
+    return (meta.subType || '').toLowerCase().includes('editing');
+  }
+
+  // -------- INITIALIZATION --------
+  async function init() {
+    try {
+      // Load catalog
+      await loadCatalog();
+      
+      // Add initial service
+      addService();
+      
+      // Event listeners
+      document.getElementById('addServiceBtn').addEventListener('click', addService);
+      
+      document.getElementById('intakeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!e.target.checkValidity()) {
+          updateSubmitState();
+          return;
+        }
+        await submitRequest();
+      });
+      
+      // Discount change handler
+      document.querySelectorAll('input[name="selfDiscount"]').forEach(radio => {
+        radio.addEventListener('change', updateQuote);
+      });
+      
+      // Form validation
+      document.getElementById('intakeForm').addEventListener('input', updateSubmitState);
+      document.getElementById('intakeForm').addEventListener('change', updateSubmitState);
+      
+      // Initial state
+      updateSubmitState();
+      sendHeightImmediate();
+      
+    } catch (error) {
+      console.error('Initialization error:', error);
+      renderFatal('Failed to load service catalog. Please refresh the page or contact support.');
+    }
+  }
+
+  // Start the application
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Height monitoring
+  new ResizeObserver(sendHeightDebounced).observe(document.body);
+
+</script>
+
 </body>
 </html>
